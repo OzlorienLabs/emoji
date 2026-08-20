@@ -64,7 +64,7 @@ export function ComposerDock({
           aria-label="Copy composition"
           onClick={onCopy}
         >
-          Copy message
+          Copy
         </button>
       </div>
     </section>

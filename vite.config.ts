@@ -13,7 +13,7 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json-summary', 'html'],
+      reporter: ['text', 'json', 'json-summary', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.test.{ts,tsx}',

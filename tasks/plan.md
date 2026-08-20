@@ -10,7 +10,7 @@ Create a static, privacy-preserving React application backed by a pinned Emoji 1
 - Keep 1,923 family records nested with 2,030 valid variants. Flatten only the in-memory search index so all 3,953 ordered sequences remain discoverable.
 - Use a reducer plus small hooks instead of a state library; use URL parameters only for shareable search/category state.
 - Scan the catalog in memory with a pre-normalized index. At this scale, a worker/postings index is deferred unless measurement exceeds the 50 ms budget.
-- Progressively render at most 480 family tiles while retaining a keyboard-accessible Show more action.
+- Window at most 240 family tiles (no more than 480 tile controls) while retaining accessible reveal and previous/next actions.
 - Use native Unicode rendering and a text-presentation preview; do not ship proprietary art or a large emoji font.
 
 ## Dependency Graph

@@ -57,12 +57,6 @@ function createManualSelection(
     target.spellcheck = false;
     target.dataset.emojiCopyFallback = 'true';
     target.setAttribute('aria-label', 'Text ready to copy manually');
-    target.style.position = 'fixed';
-    target.style.right = '1rem';
-    target.style.bottom = '1rem';
-    target.style.left = '1rem';
-    target.style.zIndex = '2147483647';
-    target.style.fontSize = '16px';
     copyDocument.body.append(target);
     isTemporary = true;
   } else {
