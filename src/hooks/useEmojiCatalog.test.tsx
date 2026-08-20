@@ -71,6 +71,14 @@ describe('loadEmojiCatalog', () => {
       'Emoji catalog could not be verified: Total count does not match catalog metadata.',
     );
   });
+
+  it.each([null, 'not an object', {}])('rejects a non-catalog payload: %j', async (payload) => {
+    const fetcher = vi.fn().mockResolvedValue(responseWith(payload));
+
+    await expect(loadEmojiCatalog(fetcher)).rejects.toThrow(
+      'Emoji catalog response was malformed.',
+    );
+  });
 });
 
 describe('useEmojiCatalog', () => {
@@ -107,6 +115,31 @@ describe('useEmojiCatalog', () => {
 
     view.unmount();
     await act(async () => resolveRequest?.(responseWith(catalogFixture)));
+
+    expect(view.container).toBeEmptyDOMElement();
+  });
+
+  it('uses a safe message for non-Error rejections', async () => {
+    const fetcher = vi.fn().mockRejectedValue('offline');
+
+    render(<CatalogHarness fetcher={fetcher} />);
+
+    expect(await screen.findByRole('button')).toHaveTextContent(
+      'Emoji catalog could not be loaded.',
+    );
+  });
+
+  it('ignores a rejection delivered after an aborted unmount', async () => {
+    let rejectRequest: ((reason: unknown) => void) | undefined;
+    const fetcher = vi.fn().mockImplementation(
+      () => new Promise<Response>((_resolve, reject) => {
+        rejectRequest = reject;
+      }),
+    );
+    const view = render(<CatalogHarness fetcher={fetcher} />);
+
+    view.unmount();
+    await act(async () => rejectRequest?.(new DOMException('Aborted', 'AbortError')));
 
     expect(view.container).toBeEmptyDOMElement();
   });

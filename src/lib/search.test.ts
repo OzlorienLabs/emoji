@@ -99,6 +99,18 @@ describe('searchEmojis', () => {
     expect(searchEmojis(index, 'volcano spreadsheet apology')).toEqual([]);
   });
 
+  it('handles empty, limited, grouped glyph, and explicit variant searches', () => {
+    expect(searchEmojis(index, '   ')).toEqual([]);
+    expect(searchEmojis(index, '😀', { group: 0, limit: 0 })).toEqual([]);
+    expect(searchEmojis(index, '😀', { group: 8 })).toEqual([]);
+
+    const variants = searchEmojis(index, 'waving hand', {
+      includeVariants: true,
+      limit: 20,
+    }).filter(({ emoji }) => emoji.familyId === '1F44B');
+    expect(variants.length).toBeGreaterThan(1);
+  });
+
   it('is deterministic for repeated queries', () => {
     const first = searchEmojis(index, 'celebrate', { limit: 25 });
     const second = searchEmojis(index, 'celebrate', { limit: 25 });

@@ -74,6 +74,25 @@ describe('generated Emoji 17 catalog', () => {
   it('formats a searchable Unicode code point label', () => {
     expect(getCodePointLabel('1F468-200D-1F4BB')).toBe('U+1F468 U+200D U+1F4BB');
   });
+
+  it('uses readable fallback labels for unknown generated groups', () => {
+    const catalog = readGeneratedCatalog();
+    const first = catalog.emojis[0]!;
+    const isolated: EmojiCatalog = {
+      ...catalog,
+      familyCount: 1,
+      variantCount: 0,
+      totalCount: 1,
+      groups: [],
+      subgroups: [],
+      emojis: [{ ...first, group: 999, subgroup: 999, variants: [] }],
+    };
+
+    expect(flattenCatalog(isolated)[0]).toMatchObject({
+      groupLabel: 'Other',
+      subgroupLabel: 'Other',
+    });
+  });
 });
 
 describe('catalog validation', () => {

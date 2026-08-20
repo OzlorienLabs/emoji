@@ -171,6 +171,7 @@ describe('tone metadata', () => {
 
   it('creates accessible labels for scalar, uniform, and mixed tone records', () => {
     expect(getVariantToneLabel(undefined)).toBe('Default');
+    expect(getVariantToneLabel([])).toBe('Default');
     expect(getVariantToneLabel(2)).toBe('Medium-light skin tone');
     expect(getVariantToneLabel([4, 4])).toBe('Medium-dark skin tone');
     expect(getVariantToneLabel([1, 5])).toBe(

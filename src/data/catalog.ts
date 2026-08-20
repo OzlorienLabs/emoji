@@ -32,7 +32,7 @@ function buildSearchTerms(
   groupLabel: string,
   subgroupLabel: string,
 ): string[] {
-  const toneLabel = emoji.name.includes(':') ? emoji.name.split(':').at(-1) ?? '' : '';
+  const toneLabel = emoji.name.includes(':') ? emoji.name.split(':').at(-1)! : '';
   const values = [
     emoji.glyph,
     emoji.name,
