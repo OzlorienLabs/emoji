@@ -17,7 +17,7 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 ## Tech Stack
 
 - Node.js 24 for local/build tooling (minimum supported runtime: Node 20.19)
-- React 19.2 with TypeScript 7
+- React 19.2 with TypeScript 6.0 (the newest release in the current `typescript-eslint` support range)
 - Vite 8 for development and production bundling
 - `emojibase-data` 17.0.0 as an exact-pinned build-time adapter for Unicode Emoji 17.0 and CLDR 48
 - Vitest 4, Testing Library, `user-event`, and V8 coverage for unit/component integration tests
