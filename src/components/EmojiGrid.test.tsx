@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EmojiFamily, SearchableEmoji } from '../data/catalog-types';
+import { stubIntersectionObserver } from '../test/dom-stubs';
 import { EmojiGrid } from './EmojiGrid';
 
 const wavingHand: EmojiFamily = {
@@ -54,6 +55,10 @@ const party: EmojiFamily = {
   order: 4,
   variants: [],
 };
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('EmojiGrid', () => {
   it('progressively reveals items and reports exact selection and details records', async () => {
@@ -144,6 +149,10 @@ describe('EmojiGrid', () => {
     fireEvent.keyDown(first, { key: 'ArrowRight' });
     expect(second).toHaveFocus();
     expect(second).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('button', { name: 'Details for waving hand' }))
+      .toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('button', { name: 'Details for red heart' }))
+      .toHaveAttribute('tabindex', '0');
 
     fireEvent.keyDown(second, { key: 'End' });
     expect(last).toHaveFocus();
@@ -157,6 +166,91 @@ describe('EmojiGrid', () => {
     expect(first).toHaveFocus();
     fireEvent.keyDown(first, { key: 'ArrowUp' });
     expect(first).toHaveFocus();
+  });
+
+  it('automatically reveals the next bounded batch near the end of the grid', () => {
+    const observer = stubIntersectionObserver();
+
+    render(
+      <EmojiGrid
+        items={[wavingHand, heart, party]}
+        initialPageSize={1}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+
+    expect(observer.observe).toHaveBeenCalledOnce();
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(1);
+
+    act(() => observer.trigger(true));
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(2);
+    expect(observer.disconnect).toHaveBeenCalled();
+  });
+
+  it('leaves the grid untouched when the sentinel is not intersecting', () => {
+    const observer = stubIntersectionObserver();
+
+    render(
+      <EmojiGrid
+        items={[wavingHand, heart, party]}
+        initialPageSize={1}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+
+    act(() => observer.trigger(false));
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(1);
+  });
+
+  it('stops revealing once every item of the live page is rendered', () => {
+    const observer = stubIntersectionObserver();
+
+    render(
+      <EmojiGrid
+        items={[wavingHand, heart, party]}
+        initialPageSize={1}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+
+    act(() => observer.trigger(true));
+    act(() => observer.trigger(true));
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(3);
+
+    // Nothing is left to reveal, so the last live observer is now a no-op.
+    act(() => observer.trigger(true));
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(3);
+    expect(screen.getByText('Showing all 3 emojis')).toBeInTheDocument();
+  });
+
+  it('ignores a stale observer callback captured before the items changed', () => {
+    const observer = stubIntersectionObserver();
+    const { rerender } = render(
+      <EmojiGrid
+        items={[wavingHand, heart, party]}
+        initialPageSize={1}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+
+    rerender(
+      <EmojiGrid
+        items={[party, heart, wavingHand]}
+        initialPageSize={1}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+
+    expect(observer.count()).toBeGreaterThan(1);
+    act(() => observer.triggerObserver(0, true));
+
+    expect(screen.getAllByTestId('emoji-tile')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Select partying face' })).toBeInTheDocument();
   });
 
   it('resets progressive disclosure when the item collection changes', async () => {

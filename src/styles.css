@@ -689,6 +689,10 @@ button:disabled {
   text-align: center;
 }
 
+.emoji-grid__sentinel {
+  height: 1px;
+}
+
 .emoji-grid__more,
 .button {
   display: inline-flex;

@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type {
   EmojiFamily,
   EmojiSize,
@@ -76,6 +76,7 @@ export function EmojiGrid({
     offset: 0,
   }));
   const gridRef = useRef<HTMLUListElement | null>(null);
+  const revealSentinelRef = useRef<HTMLDivElement | null>(null);
   let currentState = gridState;
 
   if (gridState.items !== items || gridState.pageSize !== pageSize) {
@@ -87,15 +88,6 @@ export function EmojiGrid({
       offset: 0,
     };
     setGridState(currentState);
-  }
-
-  if (items.length === 0) {
-    return (
-      <div className="emoji-grid__empty" role="status">
-        <h2>{emptyTitle}</h2>
-        <p>{emptyMessage}</p>
-      </div>
-    );
   }
 
   const visibleItems = items.slice(
@@ -110,6 +102,43 @@ export function EmojiGrid({
     MAX_LIVE_ITEMS - visibleItems.length,
   );
   const nextPageCount = Math.min(MAX_LIVE_ITEMS, remainingCount);
+
+  useEffect(() => {
+    const sentinel = revealSentinelRef.current;
+    if (!sentinel || revealCount <= 0 || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      setGridState((current) => {
+        if (current.items !== items || current.pageSize !== pageSize) return current;
+        const liveCount = Math.min(
+          current.visibleCount,
+          Math.max(0, items.length - current.offset),
+        );
+        const remaining = Math.max(0, items.length - current.offset - liveCount);
+        const count = Math.min(
+          current.pageSize,
+          remaining,
+          MAX_LIVE_ITEMS - liveCount,
+        );
+        return count > 0
+          ? { ...current, visibleCount: current.visibleCount + count }
+          : current;
+      });
+    }, { rootMargin: '320px 0px' });
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [currentState.offset, currentState.visibleCount, items, pageSize, revealCount]);
+
+  if (items.length === 0) {
+    return (
+      <div className="emoji-grid__empty" role="status">
+        <h2>{emptyTitle}</h2>
+        <p>{emptyMessage}</p>
+      </div>
+    );
+  }
 
   const moveFocus = (
     event: KeyboardEvent<HTMLButtonElement>,
@@ -172,6 +201,10 @@ export function EmojiGrid({
                 className="emoji-tile__details"
                 type="button"
                 aria-label={`Details for ${emoji.name}`}
+                tabIndex={index === currentState.focusedIndex ? 0 : -1}
+                onFocus={() =>
+                  setGridState((current) => ({ ...current, focusedIndex: index }))
+                }
                 onClick={() => onDetails(item, emoji)}
               >
                 Details
@@ -180,6 +213,13 @@ export function EmojiGrid({
           );
         })}
       </ul>
+      {revealCount > 0 ? (
+        <div
+          ref={revealSentinelRef}
+          className="emoji-grid__sentinel"
+          aria-hidden="true"
+        />
+      ) : null}
       <p className="emoji-grid__status" role="status" aria-live="polite">
         {currentState.offset > 0
           ? `Showing ${currentState.offset + 1}–${endIndex} of ${items.length} emojis`

@@ -428,8 +428,11 @@ function EmojiExperience({
           onToggleFavorite={() => preferenceController.toggleFavorite(detailsFamily.id)}
           onViewRelated={setDetailsFamily}
           onChoose={(variant) => {
-            void selectEmoji(variant, detailsFamily);
+            const source = detailsFamily;
+            const trigger = detailsTriggerRef.current;
             setDetailsFamily(null);
+            void selectEmoji(variant, source);
+            if (preferences.quickCopy) queueMicrotask(() => trigger?.focus());
           }}
           onClose={closeDetails}
         />

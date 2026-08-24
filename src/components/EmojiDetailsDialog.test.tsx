@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { catalogFixture } from '../test/catalog-fixture';
+import { stubDialogMethods } from '../test/dom-stubs';
 import { EmojiDetailsDialog } from './EmojiDetailsDialog';
 
 describe('EmojiDetailsDialog', () => {
@@ -74,7 +75,71 @@ describe('EmojiDetailsDialog', () => {
     );
 
     expect(screen.getByText('Use emoji')).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', {
+      bubbles: true,
+      cancelable: true,
+    }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('opens and closes through the native modal dialog API when available', () => {
+    const showModal = vi.fn(function showModal(this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    });
+    const close = vi.fn(function close(this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    });
+    const restore = stubDialogMethods({ showModal, close });
+
+    try {
+      const { unmount } = render(
+        <EmojiDetailsDialog
+          family={family}
+          groupLabel="People & body"
+          subgroupLabel="Person role"
+          favorite={false}
+          relatedFamilies={[]}
+          onChoose={() => undefined}
+          onViewRelated={() => undefined}
+          onToggleFavorite={() => undefined}
+          onClose={() => undefined}
+        />,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      expect(showModal).toHaveBeenCalledOnce();
+      expect(dialog).toHaveAttribute('open');
+      expect(screen.getByRole('button', { name: 'Close details' })).toHaveFocus();
+
+      unmount();
+      expect(close).toHaveBeenCalledOnce();
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      restore();
+    }
+  });
+
+  it('falls back to a non-modal dialog and clears it when showModal is unsupported', () => {
+    expect(HTMLDialogElement.prototype.showModal).toBeUndefined();
+
+    const { unmount } = render(
+      <EmojiDetailsDialog
+        family={family}
+        groupLabel="People & body"
+        subgroupLabel="Person role"
+        favorite={false}
+        relatedFamilies={[]}
+        onChoose={() => undefined}
+        onViewRelated={() => undefined}
+        onToggleFavorite={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('open');
+
+    unmount();
+    expect(dialog).not.toHaveAttribute('open');
   });
 });

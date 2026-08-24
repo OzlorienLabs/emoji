@@ -26,19 +26,32 @@ export function EmojiDetailsDialog({
   onToggleFavorite,
   onClose,
 }: EmojiDetailsDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const supportsModal = typeof dialog.showModal === 'function';
+    if (supportsModal) dialog.showModal();
+    else dialog.setAttribute('open', '');
     closeRef.current?.focus();
+
+    return () => {
+      if (supportsModal) dialog.close();
+      else dialog.removeAttribute('open');
+    };
   }, []);
 
   return (
     <dialog
-      open
+      ref={dialogRef}
       className="details-dialog"
       aria-labelledby="details-title"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose();
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
       }}
     >
       <div className="details-heading">

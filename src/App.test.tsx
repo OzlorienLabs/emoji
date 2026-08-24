@@ -95,6 +95,26 @@ describe('Emoji Compass', () => {
     expect(screen.getByLabelText('Emoji composer')).toHaveValue('👩🏿‍💻');
   });
 
+  it('restores the details trigger after quick-copying a variant', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true }}
+        copy={copy}
+      />,
+    );
+
+    const detailsButton = screen.getByRole('button', { name: 'Details for woman technologist' });
+    await user.click(detailsButton);
+    await user.click(screen.getByRole('button', { name: /Use woman technologist: dark skin tone/ }));
+
+    expect(copy).toHaveBeenCalledWith('👩🏿‍💻');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(detailsButton).toHaveFocus();
+  });
+
   it('combines search with local collections and ignores stale saved IDs', async () => {
     const user = userEvent.setup();
     render(
