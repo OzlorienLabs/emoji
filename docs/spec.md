@@ -39,6 +39,7 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 ```bash
 npm run dev
 npm run generate:data
+npm run generate:icons
 npm run test
 npm run test:coverage
 npm run typecheck
@@ -52,7 +53,9 @@ npm run preview
 
 ```text
 public/data/             Generated, self-hosted Emoji 17 catalog
-scripts/                 Reproducible data generation and integrity checks
+public/icons/            Generated PWA icon set
+public/sw.js             Offline caching for the shell, assets, and catalog
+scripts/                 Reproducible data generation, icon drawing, integrity checks
 src/components/          Focused React UI components and colocated tests
 src/data/                Catalog contracts and reviewed intent aliases
 src/hooks/               Catalog loading and persistent preferences
@@ -87,12 +90,15 @@ export function normalizeSearchText(value: string): string {
 1. Normalize case, diacritics, punctuation, underscores, hyphens, and whitespace without changing emoji glyph values.
 2. Treat query words as unordered AND constraints. Each additional word narrows results.
 3. Expand reviewed intent aliases into alternatives without silently changing AND into broad OR matching.
+   - A multi-word alias matches only an emoji carrying every one of its words, and scores as its weakest word, so `thumbs up` is never satisfied by `up arrow`.
+   - A direct alias match switches typo matching off for that word, so a curated alias sharpens results as well as broadening them.
+   - Every alias value must resolve against the real catalog; a dead alias is a test failure, not a silently degraded search.
 4. Rank exact emoji/name/phrase matches, exact name tokens, exact keywords/aliases, prefixes, substrings, then bounded typo matches.
 5. Use deterministic Unicode/CLDR order to break equal scores; favorite/recent status never outranks a stronger semantic match.
 6. If strict results are empty, show an explicit no-results state with suggested intent searches rather than irrelevant matches.
 7. Direct glyph, shortcode, hexcode, and `U+1F600` lookup must work.
 
-Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`, `flag japan`, `celebrtion`, `hot dog`, and direct emoji/code-point lookup.
+Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`, `flag japan`, `celebrtion`, `hot dog`, direct emoji/code-point lookup, and the intent set `birthday`, `deadline`, `mindblown`, `workout`, `wifi`, `pride`, `yoga`, `spicy`, `launch`, and `welcome`.
 
 ## Interaction Contract
 
@@ -108,11 +114,23 @@ Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`
 
 ## Visual and Responsive Contract
 
-- Original “Emoji Compass” identity: editorial black/cream surfaces with a high-contrast citrus accent and restrained coral/sky status colors.
+- Original “Emoji Compass” identity built on the warm Clay/Ivory palette: ivory page, paper cards, slate ink, and a clay accent used only as a bordered fill.
+- Reference palette values are display colors, so any token carrying text is derived darker until it clears AA; contrast is asserted against the stylesheet's parsed token blocks rather than reviewed by eye.
+- The loading and error screens render outside the app shell and carry their own dark treatment.
 - Mobile-first layout with a compact header, sticky search/category controls, minimum 44×44 px targets, and a composer dock above the safe-area inset.
 - Desktop uses the same information hierarchy with inline preferences and a wider grid.
 - No horizontal body overflow at 320 px, 768 px, 1024 px, or 1440 px.
 - Respect reduced-motion and system color-scheme preferences; no gradient-heavy or shadow-heavy template styling.
+
+## Offline and Installability
+
+- The app is installable: a manifest with `standalone` display, matching theme/background colors, and 192/512 icons in both `any` and `maskable` purposes.
+- Icons are drawn by a committed script with no image dependency and no third-party artwork.
+- A service worker is registered in production builds only, so the dev server is never served stale modules.
+- The worker handles same-origin `GET` only: navigations network-first with a cached-shell fallback, content-hashed assets/icons/catalog cache-first, caches namespaced by version and pruned on activate.
+- Registration degrades silently: an unsupported browser or a rejected registration must leave the app fully usable.
+- Offline support adds no third-party request and does not loosen the content security policy.
+- `sw.js` and the manifest are served `max-age=0, must-revalidate`.
 
 ## Accessibility
 
@@ -158,4 +176,4 @@ Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`
 
 ## Open Questions
 
-No blocking questions. Future optional scope: localization, installable PWA support, and account-based sync.
+No blocking questions. Installable PWA and offline support are delivered. Future optional scope: localization and account-based sync.

@@ -12,6 +12,8 @@ Emoji Compass is a fast, meaning-first emoji finder and composer. Search for an 
 - An editable emoji-and-text composer with undo, clear, copy, and an optional quick-copy mode
 - Keyboard navigation, live status messages, accessible labels, visible focus, and responsive layouts down to 320 px
 - Progressive rendering and paging capped at 240 live emoji tiles (at most 480 tile controls) to keep the full catalog responsive
+- 119 reviewed conversational aliases (331 terms) so everyday intents such as `deadline`, `mindblown`, or `workout` reach a fitting emoji
+- Installable as an app, and fully usable offline once the catalog has been cached
 
 The family grid keeps browsing compact. Every nested variant remains reachable from details and through search.
 
@@ -32,6 +34,7 @@ Vite prints the local development URL. No environment variables or external serv
 | --- | --- |
 | `npm run dev` | Start the Vite development server |
 | `npm run generate:data` | Rebuild and validate the self-hosted Emoji 17 catalog |
+| `npm run generate:icons` | Redraw the PWA icon set (output is committed) |
 | `npm run test` | Run the Vitest unit and component integration suite once |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with V8 coverage and enforce 96% thresholds |
@@ -55,7 +58,9 @@ Emoji Compass intentionally uses a small static architecture:
 
 ```text
 scripts/generate-emoji-data.mjs  pinned source data -> validated JSON
+scripts/generate-icons.mjs       draws the PWA icon set, no image dependencies
 public/data/                     versioned catalog served from the same origin
+public/sw.js                     offline caching for the shell, assets, and catalog
 src/data/                        catalog contracts and search aliases
 src/lib/                         search, variants, composer, clipboard, storage
 src/hooks/                       catalog loading and local preferences
@@ -87,11 +92,25 @@ This repository is ready for static Vercel hosting; deployment is intentionally 
 3. Use `npm run build` as the build command and `dist` as the output directory.
 4. Leave environment variables empty and deploy from the desired branch.
 
-`vercel.json` applies long-lived immutable caching to fingerprinted application assets and the versioned emoji catalog. There is no server function, database, secret, or post-deploy migration.
+`vercel.json` applies long-lived immutable caching to fingerprinted application assets and the versioned emoji catalog, a bounded lifetime to icons, and `max-age=0, must-revalidate` to the service worker and manifest. There is no server function, database, secret, or post-deploy migration.
+
+## Offline and installing
+
+Emoji Compass registers a service worker in production builds only, so the dev server always serves fresh modules. The worker handles same-origin `GET` requests and nothing else:
+
+- Navigations are network-first, so a new deployment is picked up as soon as the browser is online, falling back to the cached shell when it is not.
+- Content-hashed assets, icons, and the versioned catalog are cache-first, since those URLs never change contents.
+- Caches are namespaced by a version constant and older ones are dropped on activation.
+
+There is no build-time precache manifest: the shell is cached on install and hashed assets are cached as they are first requested. `sw.js` and the manifest are served with `max-age=0, must-revalidate` so a deployment can never pin clients to an old shell. Offline support adds no third-party request and does not loosen the content security policy.
+
+To install, use the browser's install or *Add to Home Screen* action. Uninstalling, or clearing site data, removes the cache.
 
 ## Accessibility, privacy, and performance
 
 The interface targets WCAG 2.2 AA with semantic landmarks and controls, minimum 44×44 px mobile targets, polite announcements, reduced-motion support, strong focus indication, and keyboard access. Press `/` to focus search, `Escape` to clear it, and use arrow, Home, and End keys within the emoji grid.
+
+Both themes use the warm Clay/Ivory palette. Contrast is enforced by tests that parse the stylesheet's token blocks and assert 4.5:1 for every text pair and 3:1 for focus rings and control boundaries, so a palette change that regresses contrast fails the suite.
 
 Performance budgets are 120 KB gzip for initial JavaScript, 25 KB gzip for CSS, and 150 KB compressed for the catalog. The product targets LCP ≤2.5 s, INP ≤200 ms, CLS ≤0.1, and search-to-paint p95 ≤50 ms on the full index. It uses no remote fonts, advertisements, analytics, or runtime third-party requests.
 

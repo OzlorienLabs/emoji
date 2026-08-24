@@ -70,3 +70,43 @@
 - Verify: `npm run verify`, `npm run build`, production preview, clean console, screenshots, performance measurements.
 - Dependencies: Tasks 1–7.
 - Likely files: styles, documentation, hosting config, final tests.
+
+## Task 9: Close the coverage gate on the progressive-reveal batch
+
+- [x] Give the dialog cleanup two real branches instead of a jsdom-shaped guard.
+- [x] Add restorable stand-ins for `showModal`/`close` and `IntersectionObserver`, which jsdom does not implement.
+- [x] Cover the observer callback's no-intersection, stale-collection, and nothing-left branches.
+- Verify: `npm run verify` (branches 95.81% -> 96.78%).
+- Dependencies: Task 8.
+- Likely files: `EmojiGrid`, `EmojiDetailsDialog`, `src/test/dom-stubs.ts`, `App.tsx`.
+
+## Task 10: Retune the palette to Clay/Ivory
+
+- [x] Map both themes onto the warm Clay/Ivory system.
+- [x] Derive AA-safe variants for text-carrying tokens; the reference values are display colours.
+- [x] Fix the pre-existing failures: `--line-strong` at 2.11:1 and `--ink-faint` at 3.68:1 on chips.
+- [x] Add a dark treatment for the loading/error screens, which render outside the app shell.
+- Verify: `src/styles.contrast.test.ts` (50 assertions over the parsed token blocks).
+- Dependencies: Task 8.
+- Likely files: `src/styles.css`, `index.html`, contrast test.
+
+## Task 11: Deepen meaning-first search
+
+- [x] Match multi-word aliases as phrases so `thumbs up` is not satisfied by `up arrow`.
+- [x] Expand reviewed aliases from 29 keys to 119 (331 terms).
+- [x] Validate every alias against the real catalog; repair or drop dead values.
+- [x] Add gold-query fixtures for the new intents and regressions for `deadline` and `disgusted`.
+- Verify: `npm run test -- search` (31 tests).
+- Dependencies: Tasks 2–3.
+- Likely files: `src/data/intent-aliases.ts`, `src/lib/search.ts`, search tests.
+
+## Task 12: Ship offline and installable support
+
+- [x] Draw the PWA icon set from a committed script with no image dependency.
+- [x] Add the manifest, the same-origin service worker, and production-only registration.
+- [x] Set worker/manifest cache headers and extend the CSP without loosening it.
+- [x] Add registration tests and manifest/worker/hosting integrity tests.
+- Verify: `npm run verify`; confirm `dist/` ships the worker, manifest, and icons.
+- Not verified here: true offline behaviour in a real browser (no browser automation available in this environment).
+- Dependencies: Task 8.
+- Likely files: `scripts/generate-icons.mjs`, `public/sw.js`, `public/manifest.webmanifest`, `src/lib/pwa.ts`, `vercel.json`.

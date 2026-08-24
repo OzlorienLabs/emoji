@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "generate:data": "node scripts/generate-emoji-data.mjs",
+    "generate:icons": "node scripts/generate-icons.mjs",
     "prebuild": "npm run generate:data",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
