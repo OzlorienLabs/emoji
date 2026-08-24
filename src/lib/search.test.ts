@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { flattenCatalog } from '../data/catalog';
+import { INTENT_ALIASES } from '../data/intent-aliases';
 import type { EmojiCatalog } from '../data/catalog-types';
 import {
   createSearchIndex,
@@ -123,6 +124,91 @@ describe('searchEmojis', () => {
 
     for (let iteration = 0; iteration < 20; iteration += 1) {
       searchEmojis(index, 'happy dance', { limit: 40 });
+    }
+
+    expect(performance.now() - startedAt).toBeLessThan(1_000);
+  });
+});
+
+describe('intent aliases', () => {
+  const entries = Object.entries(INTENT_ALIASES);
+
+  it('keys every alias by a single normalized token', () => {
+    for (const [key] of entries) {
+      expect(normalizeSearchText(key), `alias key ${key}`).toBe(key);
+      expect(key, `alias key ${key}`).not.toContain(' ');
+    }
+  });
+
+  it('stores every alias value in normalized form', () => {
+    for (const [key, values] of entries) {
+      for (const value of values) {
+        expect(normalizeSearchText(value), `${key} -> ${value}`).toBe(value);
+      }
+    }
+  });
+
+  it('resolves every alias value against the real catalog', () => {
+    const dead = entries.flatMap(([key, values]) =>
+      values
+        .filter((value) => searchEmojis(index, value, { limit: 1 }).length === 0)
+        .map((value) => `${key} -> ${value}`),
+    );
+
+    expect(dead).toEqual([]);
+  });
+
+  it('returns results for every alias key', () => {
+    const empty = entries
+      .map(([key]) => key)
+      .filter((key) => searchEmojis(index, key, { limit: 1 }).length === 0);
+
+    expect(empty).toEqual([]);
+  });
+});
+
+describe('alias-driven relevance', () => {
+  it('matches a multi-word alias only when every word is present', () => {
+    const names = searchEmojis(index, 'agree', { limit: 40 }).map(({ emoji }) => emoji.name);
+
+    // `agree` expands to the phrase `thumbs up`, which must not be satisfied by
+    // an unrelated emoji carrying only the word `up`.
+    expect(names).toContain('thumbs up');
+    expect(names).not.toContain('up arrow');
+    expect(names).not.toContain('up button');
+  });
+
+  it('suppresses typo matching once an alias resolves directly', () => {
+    const deadline = searchEmojis(index, 'deadline', { limit: 10 }).map(({ emoji }) => emoji.name);
+    // Without aliases this reached `deadlift`, and so `person lifting weights`.
+    expect(deadline).toContain('alarm clock');
+    expect(deadline.some((name) => /lifting weights/.test(name))).toBe(false);
+
+    const disgusted = searchEmojis(index, 'disgusted', { limit: 10 }).map(({ emoji }) => emoji.name);
+    expect(disgusted).toContain('nauseated face');
+    expect(disgusted).not.toContain('disguised face');
+  });
+
+  it.each([
+    ['birthday', '🎂'],
+    ['deadline', '⏰️'],
+    ['mindblown', '🤯'],
+    ['workout', '🏋️'],
+    ['wifi', '🛜'],
+    ['pride', '🏳️‍🌈'],
+    ['yoga', '🧘'],
+    ['spicy', '🌶️'],
+    ['launch', '🚀'],
+    ['welcome', '👋'],
+  ])('surfaces a fitting emoji for the intent %s', (query, expected) => {
+    expect(glyphs(query, 6)).toContain(expected);
+  });
+
+  it('keeps alias expansion inside the response budget on the full index', () => {
+    const startedAt = performance.now();
+
+    for (let iteration = 0; iteration < 20; iteration += 1) {
+      searchEmojis(index, 'congratulations celebrate', { limit: 40 });
     }
 
     expect(performance.now() - startedAt).toBeLessThan(1_000);

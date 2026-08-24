@@ -151,13 +151,36 @@ function fuzzyTokenScore(document: IndexedEmoji, candidate: string): number {
 }
 
 function alternativesFor(token: string): readonly string[] {
-  return [token, ...(INTENT_ALIASES[token] ?? [])].flatMap((value) => {
-    const normalized = normalizeSearchText(value);
-    return normalized ? normalized.split(' ') : [];
-  });
+  return [...new Set(
+    [token, ...(INTENT_ALIASES[token] ?? [])]
+      .map(normalizeSearchText)
+      .filter(Boolean),
+  )];
+}
+
+/**
+ * Scores a multi-word alias such as `thumbs up`. Every word must be present, so
+ * the phrase cannot be satisfied by an unrelated emoji that happens to carry
+ * only its weakest word (`up arrow`). The phrase scores as its weakest word so
+ * a loose two-word match never outranks a strong single-word one.
+ */
+function phraseAlternativeScore(document: IndexedEmoji, candidate: string): number {
+  if (document.name === candidate) return 260;
+  if (document.allPhrases.includes(candidate)) return 230;
+  if (document.name.includes(candidate)) return 220;
+
+  let weakest = Number.POSITIVE_INFINITY;
+  for (const word of candidate.split(' ')) {
+    const score = exactTokenScore(document, word) || prefixTokenScore(document, word);
+    if (score === 0) return 0;
+    weakest = Math.min(weakest, score);
+  }
+
+  return Number.isFinite(weakest) ? weakest : 0;
 }
 
 function directTokenScore(document: IndexedEmoji, candidate: string): number {
+  if (candidate.includes(' ')) return phraseAlternativeScore(document, candidate);
   return (
     exactTokenScore(document, candidate) ||
     prefixTokenScore(document, candidate) ||
