@@ -2,8 +2,8 @@
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #191b17;
-  background: #f5f2e8;
+  color: #141413;
+  background: #faf9f5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background: #f5f2e8;
+  background: #faf9f5;
 }
 
 button,
@@ -48,33 +48,34 @@ button:disabled {
 }
 
 ::selection {
-  color: #10120d;
-  background: #dfff58;
+  color: #141413;
+  background: #f4ddd2;
 }
 
 :focus-visible {
-  outline: 3px solid #24715a;
+  outline: 3px solid #a94f33;
   outline-offset: 3px;
 }
 
 .app-shell {
-  --page: #f5f2e8;
-  --surface: #fffdf6;
+  --page: #faf9f5;
+  --surface: #fdfcf8;
   --surface-strong: #ffffff;
-  --surface-muted: #ebe8de;
-  --ink: #191b17;
-  --ink-soft: #55594f;
-  --ink-faint: #74786e;
-  --line: #d5d2c7;
-  --line-strong: #aaa99f;
-  --accent: #dfff58;
-  --accent-strong: #c9ec45;
-  --accent-ink: #202d0c;
-  --coral: #ff7967;
-  --sky: #9dd8e7;
-  --focus: #24715a;
-  --danger: #a23f31;
-  --veil: rgb(19 21 17 / 62%);
+  --surface-muted: #f0eee6;
+  --ink: #141413;
+  --ink-soft: #5c5b54;
+  --ink-faint: #6b6a62;
+  --line: #d1cfc5;
+  --line-strong: #8a887d;
+  --accent: #d97757;
+  --accent-strong: #e28a6b;
+  --accent-ink: #141413;
+  --coral: #a94f33;
+  --sky: #f7e4db;
+  --focus: #a94f33;
+  --danger: #a83228;
+  --success: #5f7047;
+  --veil: rgb(20 20 19 / 62%);
   --max-width: 76rem;
   min-height: 100vh;
   padding-bottom: calc(11.75rem + env(safe-area-inset-bottom));
@@ -84,44 +85,46 @@ button:disabled {
 }
 
 .app-shell[data-theme="dark"] {
-  --page: #171914;
-  --surface: #20231d;
-  --surface-strong: #282b24;
-  --surface-muted: #30332c;
-  --ink: #f4f1e6;
-  --ink-soft: #c5c6bb;
-  --ink-faint: #a1a499;
-  --line: #41453c;
-  --line-strong: #666b60;
-  --accent: #cbed50;
-  --accent-strong: #dfff58;
-  --accent-ink: #182008;
-  --coral: #ff8877;
-  --sky: #88cddd;
-  --focus: #9dd8e7;
-  --danger: #ff9c8e;
+  --page: #1a1917;
+  --surface: #232220;
+  --surface-strong: #2c2b28;
+  --surface-muted: #333230;
+  --ink: #f5f3ee;
+  --ink-soft: #c3c1b8;
+  --ink-faint: #a5a39a;
+  --line: #403e3a;
+  --line-strong: #85837a;
+  --accent: #e0906f;
+  --accent-strong: #eda07f;
+  --accent-ink: #1a1917;
+  --coral: #e0906f;
+  --sky: #3d332e;
+  --focus: #e0906f;
+  --danger: #f08b7d;
+  --success: #9dbd7a;
   --veil: rgb(0 0 0 / 70%);
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   .app-shell[data-theme="system"] {
-    --page: #171914;
-    --surface: #20231d;
-    --surface-strong: #282b24;
-    --surface-muted: #30332c;
-    --ink: #f4f1e6;
-    --ink-soft: #c5c6bb;
-    --ink-faint: #a1a499;
-    --line: #41453c;
-    --line-strong: #666b60;
-    --accent: #cbed50;
-    --accent-strong: #dfff58;
-    --accent-ink: #182008;
-    --coral: #ff8877;
-    --sky: #88cddd;
-    --focus: #9dd8e7;
-    --danger: #ff9c8e;
+    --page: #1a1917;
+    --surface: #232220;
+    --surface-strong: #2c2b28;
+    --surface-muted: #333230;
+    --ink: #f5f3ee;
+    --ink-soft: #c3c1b8;
+    --ink-faint: #a5a39a;
+    --line: #403e3a;
+    --line-strong: #85837a;
+    --accent: #e0906f;
+    --accent-strong: #eda07f;
+    --accent-ink: #1a1917;
+    --coral: #e0906f;
+    --sky: #3d332e;
+    --focus: #e0906f;
+    --danger: #f08b7d;
+    --success: #9dbd7a;
     --veil: rgb(0 0 0 / 70%);
     color-scheme: dark;
   }
@@ -774,7 +777,7 @@ button:disabled {
 .suggestion-panel button:hover {
   border-color: var(--ink-soft);
   background: var(--sky);
-  color: #172428;
+  color: var(--ink);
 }
 
 .button-primary {
@@ -881,6 +884,10 @@ button:disabled {
   display: none;
 }
 
+.copy-feedback [role="status"]:not(:empty) {
+  border-color: var(--success);
+}
+
 .copy-feedback [role="alert"] {
   border-color: var(--danger);
   color: var(--danger);
@@ -898,17 +905,17 @@ textarea[data-emoji-copy-fallback="true"] {
   margin-inline: auto;
   padding: 0.875rem;
   resize: vertical;
-  border: 3px solid #24715a;
+  border: 3px solid #a94f33;
   border-radius: 0.5rem;
   outline: 0;
-  color: #191b17;
+  color: #141413;
   background: #ffffff;
   box-shadow: 0 0 0 100vmax rgb(19 21 17 / 45%);
   font: 1rem/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
 }
 
 textarea[data-emoji-copy-fallback="true"]:focus-visible {
-  outline: 3px solid #dfff58;
+  outline: 3px solid #a94f33;
   outline-offset: 2px;
 }
 
@@ -1126,8 +1133,8 @@ textarea[data-emoji-copy-fallback="true"]:focus-visible {
   justify-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  color: #191b17;
-  background: #f5f2e8;
+  color: #141413;
+  background: #faf9f5;
   text-align: center;
 }
 
@@ -1140,7 +1147,7 @@ textarea[data-emoji-copy-fallback="true"]:focus-visible {
 .state-page p {
   max-width: 30rem;
   margin: 0;
-  color: #55594f;
+  color: #5c5b54;
   line-height: 1.6;
 }
 
@@ -1151,7 +1158,7 @@ textarea[data-emoji-copy-fallback="true"]:focus-visible {
   margin-top: 0.5rem;
   overflow: hidden;
   border-radius: 999px;
-  background: #d5d2c7;
+  background: #e8e5db;
 }
 
 .loading-stripes::after {
@@ -1159,9 +1166,31 @@ textarea[data-emoji-copy-fallback="true"]:focus-visible {
   inset: 0 auto 0 0;
   width: 35%;
   border-radius: inherit;
-  background: #c9ec45;
+  background: #d97757;
   content: "";
   animation: loading-track 1.1s ease-in-out infinite alternate;
+}
+
+/* The loading and error screens render outside .app-shell, so they cannot read
+   the theme tokens and need their own dark treatment. */
+@media (prefers-color-scheme: dark) {
+  .state-page {
+    color: #f5f3ee;
+    background: #1a1917;
+    color-scheme: dark;
+  }
+
+  .state-page p {
+    color: #c3c1b8;
+  }
+
+  .loading-stripes {
+    background: #403e3a;
+  }
+
+  .loading-stripes::after {
+    background: #e0906f;
+  }
 }
 
 @keyframes loading-track {
