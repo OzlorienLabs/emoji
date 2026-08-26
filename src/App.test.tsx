@@ -352,4 +352,141 @@ describe('Emoji Compass', () => {
     }));
     expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('👩🏿‍💻');
   });
+
+  it('polishes composed message with on-device AI preserving emojis and vector icons', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    const destroy = vi.fn();
+    let promptCallCount = 0;
+    const prompt = vi.fn().mockImplementation(() => {
+      promptCallCount++;
+      return Promise.resolve(
+        promptCallCount === 1
+          ? 'Hello team! :arrow-right: We are launching version 2 🚀 🎉'
+          : 'Excited to ship v2 today with full team! :arrow-right: 🚀 🎉',
+      );
+    });
+    const create = vi.fn().mockResolvedValue({ prompt, destroy });
+    const mockLanguageModel = {
+      availability: vi.fn().mockResolvedValue('readily'),
+      create,
+    };
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        customLanguageModel={mockLanguageModel}
+        copy={copy}
+      />,
+    );
+
+    // 1. Compose message with emojis and icons
+    await user.type(screen.getByRole('searchbox'), 'party popper');
+    await user.click(await screen.findByRole('button', { name: 'Add party popper' }));
+
+    await user.type(screen.getByRole('searchbox'), '{Control>}a{/Control}{Backspace}arrow right');
+    await user.click(await screen.findByRole('button', { name: 'Add arrow right' }));
+
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('🎉:arrow-right:');
+
+    // 2. Click AI Polish button directly
+    const polishBtn = await screen.findByRole('button', { name: /polish message with ai/i });
+    await user.click(polishBtn);
+
+    // 3. Verify output was committed with emojis and icons preserved
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('Hello team! :arrow-right: We are launching version 2 🚀 🎉');
+    });
+
+    expect(screen.getByRole('status', { name: 'Copy status' })).toHaveTextContent(
+      'Polished with on-device AI ✨',
+    );
+
+    // 4. Button now shows Regenerate
+    const regenBtn = screen.getByRole('button', { name: /regenerate polished message with ai/i });
+    expect(regenBtn).toHaveTextContent('Regenerate');
+
+    // 5. Click Regenerate to get a fresh rewording
+    await user.click(regenBtn);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('Excited to ship v2 today with full team! :arrow-right: 🚀 🎉');
+    });
+
+    // 6. Undo reverts to previous polished draft
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('Hello team! :arrow-right: We are launching version 2 🚀 🎉');
+
+    // 7. Undo again reverts to original unpolished composition
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('🎉:arrow-right:');
+
+    // 8. Copy works cleanly
+    await user.click(screen.getByRole('button', { name: 'Copy composition' }));
+    expect(copy).toHaveBeenCalledWith('🎉:arrow-right:');
+  });
+
+  it('handles AI polish error gracefully with feedback toast', async () => {
+    const user = userEvent.setup();
+    const create = vi.fn().mockRejectedValue(new Error('Model temporarily unavailable'));
+    const mockLanguageModel = {
+      availability: vi.fn().mockResolvedValue('readily'),
+      create,
+    };
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        customLanguageModel={mockLanguageModel}
+      />,
+    );
+
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
+    await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
+
+    const polishBtn = await screen.findByRole('button', { name: /polish message with ai/i });
+    await user.click(polishBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Model temporarily unavailable');
+  });
+
+  it('cancels ongoing AI polish in App when cancel button is clicked', async () => {
+    const user = userEvent.setup();
+    let resolvePrompt: ((val: string) => void) | undefined;
+    const prompt = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePrompt = resolve;
+        }),
+    );
+    const create = vi.fn().mockResolvedValue({ prompt, destroy: vi.fn() });
+    const mockLanguageModel = {
+      availability: vi.fn().mockResolvedValue('readily'),
+      create,
+    };
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        customLanguageModel={mockLanguageModel}
+      />,
+    );
+
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
+    await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
+
+    const polishBtn = await screen.findByRole('button', { name: /polish message with ai/i });
+    await user.click(polishBtn);
+
+    // In-box animation overlay is visible
+    expect(screen.getByText('Polishing with on-device AI…')).toBeInTheDocument();
+
+    const busyBtn = screen.getByRole('button', { name: /polishing message with on-device ai/i });
+    await user.click(busyBtn);
+
+    expect(screen.getByRole('button', { name: /polish message with ai/i })).toBeInTheDocument();
+    resolvePrompt?.('late output');
+  });
 });

@@ -24,6 +24,7 @@ import type {
 } from './data/catalog-types';
 import { useEmojiCatalog } from './hooks/useEmojiCatalog';
 import { useEmojiPreferences } from './hooks/useEmojiPreferences';
+import { useChromeAI } from './hooks/useChromeAI';
 import { copyText, type ClipboardResult, type CopyTextOptions } from './lib/clipboard';
 import {
   appendToComposer,
@@ -47,6 +48,7 @@ export interface AppProps {
   fetcher?: typeof fetch;
   storage?: StorageLike | null;
   copy?: CopyFunction;
+  customLanguageModel?: unknown;
 }
 
 interface EmojiExperienceProps extends Omit<AppProps, 'initialCatalog' | 'initialIconCatalog' | 'fetcher'> {
@@ -165,6 +167,7 @@ function EmojiExperience({
   initialPreferences,
   storage,
   copy = copyText,
+  customLanguageModel,
 }: EmojiExperienceProps) {
   const initialUrl = useMemo(() => readInitialUrl(catalog, iconCatalog), [catalog, iconCatalog]);
   const [query, setQuery] = useState(initialUrl.query);
@@ -174,6 +177,7 @@ function EmojiExperience({
   const [composer, setComposer] = useState(() => createComposerHistory());
   const [detailsFamily, setDetailsFamily] = useState<EmojiFamily | null>(null);
   const [detailsIcon, setDetailsIcon] = useState<IconRecord | null>(null);
+  const [hasPolished, setHasPolished] = useState(false);
   const [copyStatus, setCopyStatus] = useState<{ kind: 'success' | 'error'; message: string }>();
   const searchRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -181,6 +185,24 @@ function EmojiExperience({
   const manualCleanup = useRef<(() => void) | undefined>(undefined);
   const preferenceController = useEmojiPreferences({ initial: initialPreferences, storage });
   const { preferences } = preferenceController;
+
+  const ai = useChromeAI({
+    customLanguageModel,
+    onSuccess: (polishedValue) => {
+      setComposer((current) => commitComposerValue(current, polishedValue));
+      setHasPolished(true);
+      setCopyStatus({
+        kind: 'success',
+        message: 'Polished with on-device AI ✨',
+      });
+    },
+    onError: (err) => {
+      setCopyStatus({
+        kind: 'error',
+        message: err.message || 'AI polishing could not complete',
+      });
+    },
+  });
 
   const emojiRecords = useMemo(() => flattenCatalog(catalog), [catalog]);
   const iconRecords = useMemo(() => flattenIconCatalog(iconCatalog), [iconCatalog]);
@@ -560,10 +582,21 @@ function EmojiExperience({
         history={composer}
         editorRef={composerRef}
         iconById={iconById}
-        onChange={(value) => setComposer((current) => commitComposerValue(current, value))}
+        onChange={(value) => {
+          setHasPolished(false);
+          setComposer((current) => commitComposerValue(current, value));
+        }}
         onUndo={() => setComposer((current) => undoComposer(current))}
-        onClear={() => setComposer((current) => clearComposer(current))}
+        onClear={() => {
+          setHasPolished(false);
+          setComposer((current) => clearComposer(current));
+        }}
         onCopy={() => void copyComposition()}
+        isAIAvailable={ai.isAvailable}
+        isPolishing={ai.isPolishing}
+        hasPolished={hasPolished}
+        onPolish={() => void ai.polish(composer.value)}
+        onCancelPolish={ai.cancel}
       />
 
       <div className="copy-feedback" aria-live="polite">

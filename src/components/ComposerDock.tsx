@@ -25,6 +25,11 @@ export interface ComposerDockProps {
   onUndo: () => void;
   onClear: () => void;
   onCopy: () => void;
+  isAIAvailable?: boolean;
+  isPolishing?: boolean;
+  hasPolished?: boolean;
+  onPolish?: () => void;
+  onCancelPolish?: () => void;
 }
 
 function serializeEditorElement(element: HTMLElement): string {
@@ -94,6 +99,11 @@ export function ComposerDock({
   onUndo,
   onClear,
   onCopy,
+  isAIAvailable = false,
+  isPolishing = false,
+  hasPolished = false,
+  onPolish,
+  onCancelPolish,
 }: ComposerDockProps) {
   const internalRef = useRef<HTMLDivElement>(null);
   const editorRef = externalRef ?? internalRef;
@@ -142,6 +152,18 @@ export function ComposerDock({
     [onUndo],
   );
 
+  const polishButtonLabel = isPolishing
+    ? 'Polishing…'
+    : hasPolished
+      ? 'Regenerate'
+      : 'Polish';
+
+  const polishAriaLabel = isPolishing
+    ? 'Polishing message with on-device AI'
+    : hasPolished
+      ? 'Regenerate polished message with AI'
+      : 'Polish message with AI';
+
   return (
     <section className="composer-dock" aria-labelledby="composer-title">
       <div className="composer-heading">
@@ -152,25 +174,43 @@ export function ComposerDock({
         <span className="composer-count">{countLabel}</span>
       </div>
 
-      <div
-        ref={editorRef}
-        role="textbox"
-        contentEditable
-        suppressContentEditableWarning
-        aria-multiline="true"
-        aria-label="Emoji composer"
-        className="composer-input"
-        data-empty={!history.value ? 'true' : undefined}
-        data-placeholder="Tap emoji or type a message…"
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-      />
+      <div className="composer-input-wrap">
+        <div
+          ref={editorRef}
+          role="textbox"
+          contentEditable={!isPolishing}
+          suppressContentEditableWarning
+          aria-multiline="true"
+          aria-label="Emoji composer"
+          aria-busy={isPolishing ? 'true' : undefined}
+          className={`composer-input ${isPolishing ? 'composer-input--polishing' : ''}`}
+          data-empty={!history.value ? 'true' : undefined}
+          data-placeholder="Tap emoji or type a message…"
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+        />
+
+        {isPolishing && (
+          <div
+            className="composer-polishing-overlay"
+            role="status"
+            aria-live="polite"
+            aria-label="Polishing message with on-device AI"
+          >
+            <div className="composer-polishing-content">
+              <span className="composer-polishing-sparkle" aria-hidden="true">✨</span>
+              <span className="composer-polishing-text">Polishing with on-device AI…</span>
+              <div className="composer-polishing-bar" aria-hidden="true" />
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="composer-actions">
         <button
           type="button"
           className="button button-subtle"
-          disabled={history.undoStack.length === 0}
+          disabled={history.undoStack.length === 0 || isPolishing}
           onClick={onUndo}
         >
           Undo
@@ -178,16 +218,38 @@ export function ComposerDock({
         <button
           type="button"
           className="button button-subtle"
-          disabled={!history.value}
+          disabled={!history.value || isPolishing}
           aria-label="Clear composer"
           onClick={onClear}
         >
           Clear
         </button>
+
+        {isAIAvailable ? (
+          <button
+            type="button"
+            className={`button button-subtle composer-ai-button ${isPolishing ? 'is-polishing' : ''}`}
+            aria-label={polishAriaLabel}
+            disabled={!history.value.trim() && !isPolishing}
+            onClick={() => {
+              if (isPolishing) {
+                onCancelPolish?.();
+              } else {
+                onPolish?.();
+              }
+            }}
+          >
+            <span className="composer-ai-icon" aria-hidden="true">
+              {isPolishing ? '⏳' : '✨'}
+            </span>
+            <span>{polishButtonLabel}</span>
+          </button>
+        ) : null}
+
         <button
           type="button"
           className="button button-primary"
-          disabled={!history.value}
+          disabled={!history.value || isPolishing}
           aria-label="Copy composition"
           onClick={onCopy}
         >

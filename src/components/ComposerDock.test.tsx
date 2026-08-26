@@ -160,4 +160,127 @@ describe('ComposerDock', () => {
     fireEvent.keyDown(box, { key: 'z', ctrlKey: true });
     expect(onUndo).toHaveBeenCalledOnce();
   });
+
+  describe('Chrome Built-in AI polish integration', () => {
+    it('does not render AI polish button when isAIAvailable is false', () => {
+      render(
+        <ComposerDock
+          history={{ value: 'Hello world 🚀', undoStack: [] }}
+          isAIAvailable={false}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole('button', { name: /polish/i })).not.toBeInTheDocument();
+    });
+
+    it('renders single-click AI polish button and triggers onPolish when clicked', async () => {
+      const onPolish = vi.fn();
+      render(
+        <ComposerDock
+          history={{ value: 'Hello team 🚀', undoStack: [] }}
+          isAIAvailable={true}
+          onPolish={onPolish}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+
+      const polishBtn = screen.getByRole('button', { name: /polish message with ai/i });
+      expect(polishBtn).toBeInTheDocument();
+      expect(polishBtn).not.toBeDisabled();
+
+      await userEvent.click(polishBtn);
+      expect(onPolish).toHaveBeenCalledOnce();
+    });
+
+    it('renders Regenerate label when hasPolished is true', async () => {
+      const onPolish = vi.fn();
+      render(
+        <ComposerDock
+          history={{ value: 'Polished draft 🚀', undoStack: ['Draft 🚀'] }}
+          isAIAvailable={true}
+          hasPolished={true}
+          onPolish={onPolish}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+
+      const regenBtn = screen.getByRole('button', { name: /regenerate polished message with ai/i });
+      expect(regenBtn).toBeInTheDocument();
+      expect(regenBtn).toHaveTextContent('Regenerate');
+
+      await userEvent.click(regenBtn);
+      expect(onPolish).toHaveBeenCalledOnce();
+    });
+
+    it('works when onPolish callback is not provided', async () => {
+      render(
+        <ComposerDock
+          history={{ value: 'Hello', undoStack: [] }}
+          isAIAvailable={true}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+
+      const polishBtn = screen.getByRole('button', { name: /polish message with ai/i });
+      await userEvent.click(polishBtn);
+    });
+
+    it('shows in-box loading animation overlay and handles cancel when isPolishing is true', async () => {
+      const onCancelPolish = vi.fn();
+      const { rerender } = render(
+        <ComposerDock
+          history={{ value: 'Message being polished', undoStack: [] }}
+          isAIAvailable={true}
+          isPolishing={true}
+          onCancelPolish={onCancelPolish}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+
+      const box = screen.getByRole('textbox', { name: 'Emoji composer' });
+      expect(box).toHaveAttribute('aria-busy', 'true');
+      expect(box).toHaveAttribute('contenteditable', 'false');
+
+      // In-box animation overlay is visible
+      const overlay = screen.getByRole('status', { name: /polishing message with on-device ai/i });
+      expect(overlay).toBeInTheDocument();
+      expect(screen.getByText('Polishing with on-device AI…')).toBeInTheDocument();
+
+      const polishBtn = screen.getByRole('button', { name: /polishing message with on-device ai/i });
+      expect(polishBtn).toHaveTextContent('Polishing…');
+
+      await userEvent.click(polishBtn);
+      expect(onCancelPolish).toHaveBeenCalledOnce();
+
+      // Test cancel when onCancelPolish prop is undefined
+      rerender(
+        <ComposerDock
+          history={{ value: 'Message being polished', undoStack: [] }}
+          isAIAvailable={true}
+          isPolishing={true}
+          onChange={vi.fn()}
+          onUndo={vi.fn()}
+          onClear={vi.fn()}
+          onCopy={vi.fn()}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: /polishing message with on-device ai/i }));
+    });
+  });
 });
