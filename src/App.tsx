@@ -25,6 +25,15 @@ import type {
 import { useEmojiCatalog } from './hooks/useEmojiCatalog';
 import { useEmojiPreferences } from './hooks/useEmojiPreferences';
 import { useChromeAI } from './hooks/useChromeAI';
+import {
+  trackAIPolish,
+  trackCategoryChange,
+  trackContentTypeChange,
+  trackCopy,
+  trackDetailsOpen,
+  trackPreferenceChange,
+  trackSearch,
+} from './lib/analytics';
 import { copyText, type ClipboardResult, type CopyTextOptions } from './lib/clipboard';
 import {
   appendToComposer,
@@ -203,6 +212,7 @@ function EmojiExperience({
   const ai = useChromeAI({
     customLanguageModel,
     onSuccess: (polishedValue) => {
+      trackAIPolish('on-device');
       setComposer((current) => commitComposerValue(current, polishedValue));
       setHasPolished(true);
       showFeedback({
@@ -356,6 +366,13 @@ function EmojiExperience({
     return () => document.removeEventListener('keydown', handleShortcut);
   }, [query]);
 
+  useEffect(() => {
+    const trimmed = deferredQuery.trim();
+    if (trimmed) {
+      trackSearch(trimmed, resultItems.length, contentType);
+    }
+  }, [deferredQuery, contentType, resultItems.length]);
+
   useEffect(() => () => manualCleanup.current?.(), []);
 
   const finishCopy = (result: ClipboardResult, successMessage: string) => {
@@ -375,6 +392,7 @@ function EmojiExperience({
 
     if (isIconItem(item)) {
       if (preferences.quickCopy) {
+        trackCopy('icon', item.kebabName, preferences.iconCopyFormat);
         const payload =
           preferences.iconCopyFormat === 'jsx'
             ? getIconJsx(item)
@@ -407,6 +425,7 @@ function EmojiExperience({
 
     if (isEmojiVariant(item)) {
       if (preferences.quickCopy) {
+        trackCopy('emoji', item.glyph, 'glyph');
         finishCopy(await copy(item.glyph), `${item.name} copied`);
         return;
       }
@@ -430,6 +449,7 @@ function EmojiExperience({
   };
 
   const copyComposition = async () => {
+    trackCopy('message', composer.value, 'text');
     const result = await copy(composer.value);
     finishCopy(result, 'Message copied');
   };
@@ -490,7 +510,15 @@ function EmojiExperience({
           <span className="brand-mark" aria-hidden="true">🧭</span>
           <span>Emoji Compass</span>
         </a>
-        <PreferencePanel preferences={preferences} onChange={preferenceController.update} />
+        <PreferencePanel
+          preferences={preferences}
+          onChange={(patch) => {
+            preferenceController.update(patch);
+            for (const [key, val] of Object.entries(patch)) {
+              trackPreferenceChange(key, val);
+            }
+          }}
+        />
       </header>
 
       <main>
@@ -529,6 +557,7 @@ function EmojiExperience({
             onChange={(next) => {
               setContentType(next);
               setCategory(null);
+              trackContentTypeChange(next);
             }}
             totalCount={totalCombinedCount}
             emojiCount={catalog.totalCount}
@@ -544,7 +573,10 @@ function EmojiExperience({
                   ? 'All icons'
                   : 'All'
             }
-            onCategoryChange={(next: CategoryId | null) => setCategory(next)}
+            onCategoryChange={(next: CategoryId | null) => {
+              setCategory(next);
+              trackCategoryChange(next);
+            }}
           />
         </section>
 
@@ -576,11 +608,17 @@ function EmojiExperience({
                 ? document.activeElement
                 : null;
               if (isIconItem(source)) {
-                setDetailsIcon(iconById.get(source.id) ?? source);
+                const icon = iconById.get(source.id) ?? source;
+                setDetailsIcon(icon);
                 setDetailsFamily(null);
+                trackDetailsOpen('icon', icon.id, icon.name);
               } else {
-                setDetailsFamily(familyById.get(itemIdFor(source)) ?? null);
+                const family = familyById.get(itemIdFor(source)) ?? null;
+                setDetailsFamily(family);
                 setDetailsIcon(null);
+                if (family) {
+                  trackDetailsOpen('emoji', family.id, family.name);
+                }
               }
             }}
           />
@@ -661,15 +699,19 @@ function EmojiExperience({
           favorite={preferences.favoriteIds.includes(detailsIcon.id)}
           relatedIcons={relatedIcons}
           onCopySvg={async (svg) => {
+            trackCopy('icon', detailsIcon.kebabName, 'svg');
             finishCopy(await copy(svg), `SVG for ${detailsIcon.name} copied`);
           }}
           onCopyJsx={async (jsx) => {
+            trackCopy('icon', detailsIcon.kebabName, 'jsx');
             finishCopy(await copy(jsx), `JSX for ${detailsIcon.name} copied`);
           }}
           onCopyName={async (name) => {
+            trackCopy('icon', detailsIcon.kebabName, 'name');
             finishCopy(await copy(name), `Name ${name} copied`);
           }}
           onCopyHtml={async (html) => {
+            trackCopy('icon', detailsIcon.kebabName, 'html');
             finishCopy(await copy(html), `HTML tag for ${detailsIcon.name} copied`);
           }}
           onToggleFavorite={() => preferenceController.toggleFavorite(detailsIcon.id)}

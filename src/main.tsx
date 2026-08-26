@@ -1,8 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { initAnalytics } from './lib/analytics';
 import { registerServiceWorker } from './lib/pwa';
 import './styles.css';
+
+// Initialize Google Analytics 4 if VITE_GA_MEASUREMENT_ID is provided
+initAnalytics();
 
 const root = document.getElementById('root');
 

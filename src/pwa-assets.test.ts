@@ -108,5 +108,7 @@ describe('hosting configuration', () => {
     // Offline support must not have loosened the third-party restriction.
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("connect-src 'self'");
+    expect(csp).toContain('https://www.googletagmanager.com');
+    expect(csp).toContain('https://www.google-analytics.com');
   });
 });

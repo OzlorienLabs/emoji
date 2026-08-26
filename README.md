@@ -94,9 +94,24 @@ This repository is ready for static Vercel hosting; deployment is intentionally 
 1. Import the repository into a Vercel project.
 2. Choose the **Vite** framework preset.
 3. Use `npm run build` as the build command and `dist` as the output directory.
-4. Leave environment variables empty and deploy from the desired branch.
+4. Set the `VITE_GA_MEASUREMENT_ID` environment variable (optional, e.g. `G-XXXXXXXXXX`) for Google Analytics 4.
+5. Deploy from the desired branch.
 
-`vercel.json` applies long-lived immutable caching to fingerprinted application assets and the versioned emoji catalog, a bounded lifetime to icons, and `max-age=0, must-revalidate` to the service worker and manifest. There is no server function, database, secret, or post-deploy migration.
+`vercel.json` applies long-lived immutable caching to fingerprinted application assets and the versioned emoji catalog, a bounded lifetime to icons, and `max-age=0, must-revalidate` to the service worker and manifest.
+
+## Google Analytics (GA4) Configuration
+
+Google Analytics 4 tracking is supported out-of-the-box using the standard Google Tag (`gtag.js`):
+
+1. Set `VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX` in your local `.env.local` or Vercel Environment Variables.
+2. The app automatically initializes GA4 and instruments:
+   - Page views and route navigation
+   - Search queries, result counts, and content type
+   - Quick-copy and dialog copy actions (emojis, icons, and compositions)
+   - On-device AI polish interactions
+   - Category and content filter selections
+   - Preference modifications
+3. If `VITE_GA_MEASUREMENT_ID` is omitted or empty, all analytics scripts and network calls remain inactive.
 
 ## Offline and installing
 
