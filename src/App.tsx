@@ -308,7 +308,7 @@ function EmojiExperience({
           <span className="brand-mark" aria-hidden="true">🧭</span>
           <span>Emoji Compass</span>
         </a>
-        <div className="header-note">Private · complete · fast</div>
+        <PreferencePanel preferences={preferences} onChange={preferenceController.update} />
       </header>
 
       <main>
@@ -346,11 +346,6 @@ function EmojiExperience({
             }
           />
         </section>
-
-        <details className="preferences-drawer">
-          <summary>Filters &amp; display</summary>
-          <PreferencePanel preferences={preferences} onChange={preferenceController.update} />
-        </details>
 
         <section className="results-section" aria-labelledby="results-title">
           <div className="results-heading">

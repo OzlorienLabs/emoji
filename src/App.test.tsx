@@ -46,11 +46,10 @@ describe('Emoji Compass', () => {
     const user = userEvent.setup();
     render(<App initialCatalog={catalogFixture} />);
 
-    await user.click(screen.getByText('Filters & display'));
     await user.click(screen.getByRole('button', { name: 'Large' }));
     await user.click(screen.getByRole('button', { name: 'Text' }));
-    await user.selectOptions(screen.getByLabelText('Default skin tone'), '5');
-    await user.selectOptions(screen.getByLabelText('Color theme'), 'dark');
+    await user.click(screen.getByRole('button', { name: 'Dark skin tone' }));
+    await user.click(screen.getByRole('button', { name: 'Dark theme' }));
 
     const app = screen.getByTestId('emoji-app');
     expect(app).toHaveAttribute('data-size', 'large');
@@ -144,8 +143,7 @@ describe('Emoji Compass', () => {
     const copy = vi.fn().mockResolvedValue(copied());
     render(<App initialCatalog={catalogFixture} copy={copy} />);
 
-    await user.click(screen.getByText('Filters & display'));
-    await user.click(screen.getByRole('checkbox', { name: /copy a single emoji/i }));
+    await user.click(screen.getByRole('button', { name: /copy a single emoji/i }));
     await user.click(screen.getByRole('button', { name: 'Copy grinning face' }));
 
     expect(copy).toHaveBeenCalledWith('😀');
