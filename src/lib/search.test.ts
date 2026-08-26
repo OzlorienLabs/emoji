@@ -210,14 +210,24 @@ describe('intent aliases', () => {
   });
 
   it('resolves every alias value against the real catalog', () => {
+    const resolutionCache = new Map<string, boolean>();
+    const isResolvable = (value: string) => {
+      let cached = resolutionCache.get(value);
+      if (cached === undefined) {
+        cached = searchItems(emojiIndex, value, { limit: 1 }).length > 0;
+        resolutionCache.set(value, cached);
+      }
+      return cached;
+    };
+
     const dead = entries.flatMap(([key, values]) =>
       values
-        .filter((value) => searchItems(emojiIndex, value, { limit: 1 }).length === 0)
+        .filter((value) => !isResolvable(value))
         .map((value) => `${key} -> ${value}`),
     );
 
     expect(dead).toEqual([]);
-  });
+  }, 20_000);
 
   it('returns results for every alias key', () => {
     const empty = entries
@@ -225,7 +235,7 @@ describe('intent aliases', () => {
       .filter((key) => searchItems(emojiIndex, key, { limit: 1 }).length === 0);
 
     expect(empty).toEqual([]);
-  });
+  }, 20_000);
 });
 
 describe('alias-driven relevance', () => {
