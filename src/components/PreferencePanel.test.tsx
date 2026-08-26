@@ -45,4 +45,51 @@ describe('PreferencePanel', () => {
     expect(screen.getByRole('button', { name: 'Dark theme' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /copy a single emoji/i })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('supports selecting all skin tone variants', async () => {
+    const onChange = vi.fn();
+    render(<PreferencePanel preferences={createDefaultPreferences()} onChange={onChange} />);
+
+    const tones = [
+      { name: 'Default', value: 0 },
+      { name: 'Light skin tone', value: 1 },
+      { name: 'Medium-light skin tone', value: 2 },
+      { name: 'Medium skin tone', value: 3 },
+      { name: 'Medium-dark skin tone', value: 4 },
+      { name: 'Dark skin tone', value: 5 },
+    ] as const;
+
+    for (const { name, value } of tones) {
+      await userEvent.click(screen.getByRole('button', { name }));
+      expect(onChange).toHaveBeenLastCalledWith({ tone: value });
+    }
+  });
+
+  it('supports selecting all theme options', async () => {
+    const onChange = vi.fn();
+    render(<PreferencePanel preferences={createDefaultPreferences()} onChange={onChange} />);
+
+    const themes = [
+      { name: 'System theme', value: 'system' },
+      { name: 'Light theme', value: 'light' },
+      { name: 'Dark theme', value: 'dark' },
+    ] as const;
+
+    for (const { name, value } of themes) {
+      await userEvent.click(screen.getByRole('button', { name }));
+      expect(onChange).toHaveBeenLastCalledWith({ theme: value });
+    }
+  });
+
+  it('provides accessible toolbar semantics and descriptive button titles', () => {
+    render(<PreferencePanel preferences={createDefaultPreferences()} onChange={() => undefined} />);
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Display preferences' });
+    expect(toolbar).toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: 'Default' })).toHaveAttribute('title', 'Skin tone: Default');
+    expect(screen.getByRole('button', { name: 'System theme' })).toHaveAttribute('title', 'Theme: System theme');
+    expect(screen.getByRole('button', { name: 'Medium' })).toHaveAttribute('title', 'Emoji size: Medium');
+    expect(screen.getByRole('button', { name: 'Native' })).toHaveAttribute('title', 'Appearance: Native');
+  });
 });
