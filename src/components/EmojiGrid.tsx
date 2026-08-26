@@ -4,28 +4,38 @@ import type {
   EmojiSize,
   EmojiStyle,
   EmojiVariant,
+  IconRecord,
   SearchableEmoji,
+  SearchableIcon,
 } from '../data/catalog-types';
 import {
   getDisplayGlyph,
   selectToneVariant,
   type ToneSelection,
 } from '../lib/variants';
+import { IconSvg } from './IconSvg';
 
 const DEFAULT_PAGE_SIZE = 120;
 const MAX_LIVE_ITEMS = 240;
 
-export type EmojiGridItem = EmojiFamily | SearchableEmoji;
+export type EmojiGridItem =
+  | EmojiFamily
+  | SearchableEmoji
+  | IconRecord
+  | SearchableIcon;
+
+export type GridSelectableItem = EmojiVariant | IconRecord;
 
 export interface EmojiGridProps {
   items: readonly EmojiGridItem[];
-  onSelect: (emoji: EmojiVariant, source: EmojiGridItem) => void;
-  onDetails: (source: EmojiGridItem, emoji: EmojiVariant) => void;
+  onSelect: (item: GridSelectableItem, source: EmojiGridItem) => void;
+  onDetails: (source: EmojiGridItem, item: GridSelectableItem) => void;
   style?: EmojiStyle;
   size?: EmojiSize;
   tone?: ToneSelection;
   initialPageSize?: number;
   actionLabel?: string;
+  itemNoun?: string;
   id?: string;
   ariaLabel?: string;
   emptyTitle?: string;
@@ -45,13 +55,24 @@ function pageSizeWithinLimit(pageSize: number): number {
   return Math.min(MAX_LIVE_ITEMS, Math.max(1, Math.floor(pageSize)));
 }
 
+function isIconItem(item: EmojiGridItem): item is IconRecord | SearchableIcon {
+  return 'nodes' in item;
+}
+
 function isEmojiFamily(item: EmojiGridItem): item is EmojiFamily {
   return 'variants' in item;
 }
 
-function displayedEmoji(item: EmojiGridItem, tone: ToneSelection): EmojiVariant {
+function displayedItem(item: EmojiGridItem, tone: ToneSelection): GridSelectableItem {
+  if (isIconItem(item)) return item;
   return isEmojiFamily(item) ? selectToneVariant(item, tone) : item;
 }
+
+const ICON_PIXEL_SIZES: Record<EmojiSize, number> = {
+  small: 20,
+  medium: 28,
+  large: 36,
+};
 
 export function EmojiGrid({
   items,
@@ -62,9 +83,10 @@ export function EmojiGrid({
   tone = 0,
   initialPageSize = DEFAULT_PAGE_SIZE,
   actionLabel = 'Select',
+  itemNoun = 'emoji',
   id,
-  ariaLabel = 'Emoji results',
-  emptyTitle = 'No emojis found',
+  ariaLabel = 'Catalog results',
+  emptyTitle = 'No items found',
   emptyMessage = 'Try another word, feeling, or idea.',
 }: EmojiGridProps) {
   const pageSize = pageSizeWithinLimit(initialPageSize);
@@ -173,39 +195,46 @@ export function EmojiGrid({
     buttons?.[targetIndex]?.focus();
   };
 
+  const iconPx = ICON_PIXEL_SIZES[size] ?? 28;
+
   return (
     <section className="emoji-grid" aria-label={ariaLabel} data-size={size}>
       <ul id={id} ref={gridRef} className="emoji-grid__list" role="list">
         {visibleItems.map((item, index) => {
-          const emoji = displayedEmoji(item, tone);
+          const display = displayedItem(item, tone);
+          const isIcon = isIconItem(item);
           return (
-            <li key={item.id} className="emoji-tile" data-testid="emoji-tile">
+            <li key={item.id} className="emoji-tile" data-testid="emoji-tile" data-kind={isIcon ? 'icon' : 'emoji'}>
               <button
                 className="emoji-tile__select"
                 type="button"
-                aria-label={`${actionLabel} ${emoji.name}`}
+                aria-label={`${actionLabel} ${display.name}`}
                 data-emoji-action="select"
                 tabIndex={index === currentState.focusedIndex ? 0 : -1}
-                onClick={() => onSelect(emoji, item)}
+                onClick={() => onSelect(display, item)}
                 onFocus={() =>
                   setGridState((current) => ({ ...current, focusedIndex: index }))
                 }
                 onKeyDown={(event) => moveFocus(event, index)}
               >
                 <span className="emoji-tile__glyph" aria-hidden="true">
-                  {getDisplayGlyph(emoji, style)}
+                  {isIcon ? (
+                    <IconSvg nodes={(item as IconRecord).nodes} size={iconPx} strokeWidth={2} />
+                  ) : (
+                    getDisplayGlyph(display as EmojiVariant, style)
+                  )}
                 </span>
-                <span className="emoji-tile__name">{emoji.name}</span>
+                <span className="emoji-tile__name">{display.name}</span>
               </button>
               <button
                 className="emoji-tile__details"
                 type="button"
-                aria-label={`Details for ${emoji.name}`}
+                aria-label={`Details for ${display.name}`}
                 tabIndex={index === currentState.focusedIndex ? 0 : -1}
                 onFocus={() =>
                   setGridState((current) => ({ ...current, focusedIndex: index }))
                 }
-                onClick={() => onDetails(item, emoji)}
+                onClick={() => onDetails(item, display)}
               >
                 Details
               </button>
@@ -222,10 +251,10 @@ export function EmojiGrid({
       ) : null}
       <p className="emoji-grid__status" role="status" aria-live="polite">
         {currentState.offset > 0
-          ? `Showing ${currentState.offset + 1}–${endIndex} of ${items.length} emojis`
+          ? `Showing ${currentState.offset + 1}–${endIndex} of ${items.length} ${itemNoun}s`
           : remainingCount > 0
-            ? `Showing ${visibleItems.length} of ${items.length} emojis`
-            : `Showing all ${items.length} ${items.length === 1 ? 'emoji' : 'emojis'}`}
+            ? `Showing ${visibleItems.length} of ${items.length} ${itemNoun}s`
+            : `Showing all ${items.length} ${items.length === 1 ? itemNoun : `${itemNoun}s`}`}
       </p>
       <div className="emoji-grid__pagination">
         {currentState.offset > 0 ? (
@@ -239,7 +268,7 @@ export function EmojiGrid({
               focusedIndex: 0,
             }))}
           >
-            Show previous emojis
+            Show previous {itemNoun}s
           </button>
         ) : null}
         {revealCount > 0 ? (
@@ -251,7 +280,7 @@ export function EmojiGrid({
               visibleCount: current.visibleCount + revealCount,
             }))}
           >
-            Show {revealCount} more {revealCount === 1 ? 'emoji' : 'emojis'}
+            Show {revealCount} more {revealCount === 1 ? itemNoun : `${itemNoun}s`}
           </button>
         ) : remainingCount > 0 ? (
           <button
@@ -264,7 +293,7 @@ export function EmojiGrid({
               focusedIndex: 0,
             }))}
           >
-            Show next {nextPageCount} {nextPageCount === 1 ? 'emoji' : 'emojis'}
+            Show next {nextPageCount} {nextPageCount === 1 ? itemNoun : `${itemNoun}s`}
           </button>
         ) : null}
       </div>

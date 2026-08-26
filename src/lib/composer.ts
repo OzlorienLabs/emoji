@@ -1,3 +1,5 @@
+import type { IconRecord } from '../data/catalog-types';
+
 export const MAX_UNDO_ENTRIES = 30;
 
 export interface ComposerEdit {
@@ -166,4 +168,112 @@ function isEmojiGrapheme(grapheme: string): boolean {
 
 export function countSelectedEmojis(value: string): number {
   return splitGraphemes(value).filter(isEmojiGrapheme).length;
+}
+
+export interface ComposerToken {
+  type: 'text' | 'icon';
+  value: string;
+  icon?: IconRecord;
+}
+
+export function parseComposerTokens(
+  value: string,
+  iconById?: ReadonlyMap<string, IconRecord>,
+): readonly ComposerToken[] {
+  if (!value) return [];
+  const tokens: ComposerToken[] = [];
+  const regex = /:([a-z0-9-]+):/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(value)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({
+        type: 'text',
+        value: value.slice(lastIndex, match.index),
+      });
+    }
+    const iconName = match[1]!;
+    const icon = iconById?.get(iconName);
+    if (icon) {
+      tokens.push({
+        type: 'icon',
+        value: match[0],
+        icon,
+      });
+    } else {
+      tokens.push({
+        type: 'text',
+        value: match[0],
+      });
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < value.length) {
+    tokens.push({
+      type: 'text',
+      value: value.slice(lastIndex),
+    });
+  }
+
+  return tokens;
+}
+
+export function countSelectedContent(
+  value: string,
+  iconById?: ReadonlyMap<string, IconRecord>,
+): { emojiCount: number; iconCount: number; totalCount: number } {
+  if (!value) {
+    return { emojiCount: 0, iconCount: 0, totalCount: 0 };
+  }
+
+  const tokens = parseComposerTokens(value, iconById);
+  let iconCount = 0;
+  let textAccumulator = '';
+
+  for (const token of tokens) {
+    if (token.type === 'icon' && token.icon) {
+      iconCount += 1;
+    } else {
+      textAccumulator += token.value;
+    }
+  }
+
+  const emojiCount = countSelectedEmojis(textAccumulator);
+  return {
+    emojiCount,
+    iconCount,
+    totalCount: emojiCount + iconCount,
+  };
+}
+
+export function formatSelectedCount(
+  value: string,
+  iconById?: ReadonlyMap<string, IconRecord>,
+): string {
+  const { emojiCount, iconCount } = countSelectedContent(value, iconById);
+
+  if (emojiCount > 0 && iconCount > 0) {
+    const emojiStr = `${emojiCount} ${emojiCount === 1 ? 'emoji' : 'emojis'}`;
+    const iconStr = `${iconCount} ${iconCount === 1 ? 'icon' : 'icons'}`;
+    return `${emojiStr}, ${iconStr} selected`;
+  }
+
+  if (iconCount > 0) {
+    return `${iconCount} ${iconCount === 1 ? 'icon' : 'icons'} selected`;
+  }
+
+  return `${emojiCount} ${emojiCount === 1 ? 'emoji' : 'emojis'} selected`;
+}
+
+export function placeCaretAtEnd(element: HTMLElement) {
+  const selection = window.getSelection();
+  if (selection) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 }

@@ -1,8 +1,9 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { EmojiCatalog } from '../data/catalog-types';
-import { loadEmojiCatalog, useEmojiCatalog } from './useEmojiCatalog';
+import type { EmojiCatalog, IconCatalog } from '../data/catalog-types';
+import { loadEmojiCatalog, loadIconCatalog, useEmojiCatalog } from './useEmojiCatalog';
+import { iconCatalogFixture } from '../test/catalog-fixture';
 
 const catalogFixture: EmojiCatalog = {
   source: 'test',
@@ -35,6 +36,15 @@ function responseWith(value: unknown, ok = true): Response {
   return { ok, status: ok ? 200 : 503, json: vi.fn().mockResolvedValue(value) } as unknown as Response;
 }
 
+function mockCatalogFetcher(emojiPayload: unknown = catalogFixture, iconPayload: unknown = iconCatalogFixture) {
+  return vi.fn().mockImplementation((url: string) => {
+    if (typeof url === 'string' && url.includes('icon')) {
+      return Promise.resolve(responseWith(iconPayload));
+    }
+    return Promise.resolve(responseWith(emojiPayload));
+  });
+}
+
 function CatalogHarness({ fetcher }: { fetcher: typeof fetch }) {
   const state = useEmojiCatalog(fetcher);
 
@@ -42,7 +52,7 @@ function CatalogHarness({ fetcher }: { fetcher: typeof fetch }) {
   if (state.status === 'error') {
     return <button onClick={state.retry}>Retry: {state.message}</button>;
   }
-  return <p>{state.catalog.totalCount} emoji ready</p>;
+  return <p>{state.catalog.totalCount} emoji and {state.iconCatalog.totalCount} icons ready</p>;
 }
 
 describe('loadEmojiCatalog', () => {
@@ -81,27 +91,69 @@ describe('loadEmojiCatalog', () => {
   });
 });
 
+describe('loadIconCatalog', () => {
+  it('loads and validates the self-hosted icon catalog', async () => {
+    const fetcher = vi.fn().mockResolvedValue(responseWith(iconCatalogFixture));
+
+    await expect(loadIconCatalog(fetcher)).resolves.toEqual(iconCatalogFixture);
+    expect(fetcher).toHaveBeenCalledWith('/data/icons-1.34.json', {
+      signal: undefined,
+    });
+  });
+
+  it('reports an HTTP failure for icons without attempting to parse it', async () => {
+    const response = responseWith({}, false);
+    const fetcher = vi.fn().mockResolvedValue(response);
+
+    await expect(loadIconCatalog(fetcher)).rejects.toThrow('Icon catalog request failed (503).');
+    expect(response.json).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed icon catalog payload', async () => {
+    const malformed: IconCatalog = { ...iconCatalogFixture, totalCount: 99 };
+    const fetcher = vi.fn().mockResolvedValue(responseWith(malformed));
+
+    await expect(loadIconCatalog(fetcher)).rejects.toThrow(
+      'Icon catalog could not be verified: Total count does not match icons list length.',
+    );
+  });
+
+  it.each([null, 'not an object', {}])('rejects a non-icon-catalog payload: %j', async (payload) => {
+    const fetcher = vi.fn().mockResolvedValue(responseWith(payload));
+
+    await expect(loadIconCatalog(fetcher)).rejects.toThrow(
+      'Icon catalog response was malformed.',
+    );
+  });
+});
+
 describe('useEmojiCatalog', () => {
-  it('moves from loading to ready', async () => {
-    const fetcher = vi.fn().mockResolvedValue(responseWith(catalogFixture));
+  it('moves from loading to ready with both emoji and icon catalogs', async () => {
+    const fetcher = mockCatalogFetcher();
 
     render(<CatalogHarness fetcher={fetcher} />);
 
     expect(screen.getByText('Loading catalog')).toBeInTheDocument();
-    expect(await screen.findByText('1 emoji ready')).toBeInTheDocument();
+    expect(await screen.findByText('1 emoji and 6 icons ready')).toBeInTheDocument();
   });
 
   it('offers a working retry after a load error', async () => {
-    const fetcher = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce(responseWith(catalogFixture));
+    let callCount = 0;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      callCount += 1;
+      if (callCount <= 2) {
+        return Promise.reject(new Error('offline'));
+      }
+      if (typeof url === 'string' && url.includes('icon')) {
+        return Promise.resolve(responseWith(iconCatalogFixture));
+      }
+      return Promise.resolve(responseWith(catalogFixture));
+    });
 
     render(<CatalogHarness fetcher={fetcher} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Retry: offline/ }));
-    expect(await screen.findByText('1 emoji ready')).toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('1 emoji and 6 icons ready')).toBeInTheDocument();
   });
 
   it('does not update state after unmounting an in-flight request', async () => {
@@ -125,7 +177,7 @@ describe('useEmojiCatalog', () => {
     render(<CatalogHarness fetcher={fetcher} />);
 
     expect(await screen.findByRole('button')).toHaveTextContent(
-      'Emoji catalog could not be loaded.',
+      'Catalog could not be loaded.',
     );
   });
 

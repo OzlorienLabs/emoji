@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClipboardResult } from './lib/clipboard';
 import { createDefaultPreferences } from './lib/preferences';
-import { catalogFixture } from './test/catalog-fixture';
+import { catalogFixture, iconCatalogFixture } from './test/catalog-fixture';
 import { App } from './App';
 
 const copied = (): ClipboardResult => ({ status: 'copied', method: 'clipboard-api' });
@@ -16,35 +16,145 @@ describe('Emoji Compass', () => {
   it('finds a multi-word meaning, composes the exact glyph, and copies the message', async () => {
     const user = userEvent.setup();
     const copy = vi.fn().mockResolvedValue(copied());
-    render(<App initialCatalog={catalogFixture} copy={copy} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Find the emoji you mean' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Find the emoji or icon you mean' }))
       .toBeInTheDocument();
     expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent(
-      '9 complete emoji sequences',
+      '15 complete sequences & vector icons (9 emojis + 6 vector icons)',
     );
 
-    await user.type(screen.getByRole('searchbox', { name: 'Search emojis' }), 'blue heart');
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
     await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
 
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('💙');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
     await user.click(screen.getByRole('button', { name: 'Copy composition' }));
-    expect(copy).toHaveBeenCalledWith('💙', expect.objectContaining({
-      selectionTarget: expect.any(HTMLTextAreaElement),
-    }));
+    expect(copy).toHaveBeenCalledWith('💙');
     expect(await screen.findByRole('status', { name: 'Copy status' })).toHaveTextContent(
       'Message copied',
     );
 
     await user.click(screen.getByRole('button', { name: 'Clear composer' }));
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('');
     await user.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('💙');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
+    await user.click(screen.getByRole('button', { name: 'Add blue heart' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙💙');
+  });
+
+  it('searches vector icons, adds them to composer or quick-copies SVG/name/JSX/HTML', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+
+    // 1. In composer mode (quickCopy = false)
+    const { unmount } = render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: false }}
+        copy={copy}
+      />,
+    );
+
+    await user.type(screen.getByRole('searchbox'), 'arrow right');
+    await user.click(await screen.findByRole('button', { name: 'Add arrow right' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent(':arrow-right:');
+    expect(screen.getByTestId('composer-icon')).toHaveAttribute('title', 'Icon: arrow right');
+    expect(screen.getByText('1 icon selected')).toBeInTheDocument();
+    unmount();
+
+    // 2. In quickCopy mode with JSX format
+    const { unmount: unmountJsx } = render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true, iconCopyFormat: 'jsx' }}
+        copy={copy}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Copy arrow right' }));
+    expect(copy).toHaveBeenCalledWith('<ArrowRight />');
+    unmountJsx();
+
+    // 3. In quickCopy mode with name format
+    const { unmount: unmountName } = render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true, iconCopyFormat: 'name' }}
+        copy={copy}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Copy arrow right' }));
+    expect(copy).toHaveBeenCalledWith('arrow-right');
+    unmountName();
+
+    // 4. In quickCopy mode with html format
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true, iconCopyFormat: 'html' }}
+        copy={copy}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Copy arrow right' }));
+    expect(copy).toHaveBeenCalledWith('<i data-lucide="arrow-right"></i>');
+  });
+
+  it('filters by content type tabs (All, Emojis, Icons)', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    await user.click(screen.getByRole('tab', { name: /Icons/ }));
+    expect(screen.getByRole('button', { name: 'Arrows & Navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add arrow right' })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Arrows & Navigation' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Arrows & Navigation' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /Emojis/ }));
+    expect(screen.getByRole('button', { name: 'Smileys & emotion' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add grinning face' })).toBeVisible();
+
+    await user.click(screen.getByRole('tab', { name: /All/ }));
+    expect(screen.getByRole('button', { name: 'Add grinning face' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add arrow right' })).toBeVisible();
+  });
+
+  it('opens icon details dialog, copies multiple formats, views related, and toggles favorite', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
+
+    await user.click(screen.getByRole('button', { name: 'Details for arrow right' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'arrow right' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Copy SVG' }));
+    expect(copy).toHaveBeenCalledWith(expect.stringContaining('<svg'));
+
+    await user.click(screen.getByRole('button', { name: 'Copy React / JSX' }));
+    expect(copy).toHaveBeenCalledWith('<ArrowRight size={24} strokeWidth={2} />');
+
+    await user.click(screen.getByRole('button', { name: 'Copy Name' }));
+    expect(copy).toHaveBeenCalledWith('arrow-right');
+
+    await user.click(screen.getByRole('button', { name: 'Copy HTML' }));
+    expect(copy).toHaveBeenCalledWith('<i data-lucide="arrow-right"></i>');
+
+    await user.click(screen.getByRole('button', { name: /View details for arrow left/i }));
+    expect(screen.getByRole('heading', { level: 2, name: 'arrow left' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '☆ Add to favorites' }));
+    await user.click(screen.getByRole('button', { name: 'Close details' }));
+
+    await user.click(screen.getByRole('button', { name: 'Favorites' }));
+    expect(screen.getByRole('button', { name: 'Add arrow left' })).toBeVisible();
   });
 
   it('applies display and tone preferences and preserves exact variants', async () => {
     const user = userEvent.setup();
-    render(<App initialCatalog={catalogFixture} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
     await user.click(screen.getByRole('button', { name: 'Large' }));
     await user.click(screen.getByRole('button', { name: 'Text' }));
@@ -55,16 +165,16 @@ describe('Emoji Compass', () => {
     expect(app).toHaveAttribute('data-size', 'large');
     expect(app).toHaveAttribute('data-theme', 'dark');
 
-    await user.type(screen.getByRole('searchbox', { name: 'Search emojis' }), 'woman technologist');
+    await user.type(screen.getByRole('searchbox'), 'woman technologist');
     await user.click(await screen.findByRole('button', {
       name: 'Add woman technologist: dark skin tone',
     }));
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('👩🏿‍💻');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('👩🏿‍💻');
   });
 
   it('exposes details and variants, favorites, and recently used collections', async () => {
     const user = userEvent.setup();
-    render(<App initialCatalog={catalogFixture} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
     const detailsButton = screen.getByRole('button', { name: 'Details for woman technologist' });
     await user.click(detailsButton);
@@ -78,20 +188,20 @@ describe('Emoji Compass', () => {
     await user.click(screen.getByRole('button', { name: 'Recently used' }));
     expect(screen.getByRole('button', { name: 'Add woman technologist' })).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: 'All emojis' }));
+    await user.click(screen.getByRole('button', { name: 'All' }));
     await user.click(screen.getByRole('button', { name: 'People & body' }));
     expect(screen.getByRole('heading', { name: 'People & body' })).toBeInTheDocument();
   });
 
   it('adds an exact details variant and closes the dialog', async () => {
     const user = userEvent.setup();
-    render(<App initialCatalog={catalogFixture} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
     await user.click(screen.getByRole('button', { name: 'Details for woman technologist' }));
     await user.click(screen.getByRole('button', { name: /Use woman technologist: dark skin tone/ }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('👩🏿‍💻');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('👩🏿‍💻');
   });
 
   it('restores the details trigger after quick-copying a variant', async () => {
@@ -100,6 +210,7 @@ describe('Emoji Compass', () => {
     render(
       <App
         initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
         initialPreferences={{ ...createDefaultPreferences(), quickCopy: true }}
         copy={copy}
       />,
@@ -119,41 +230,43 @@ describe('Emoji Compass', () => {
     render(
       <App
         initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
         initialPreferences={{
           ...createDefaultPreferences(),
-          favoriteIds: ['1F499', 'missing'],
-          recentIds: ['1F389', 'missing'],
+          favoriteIds: ['1F499', 'arrow-right', 'missing'],
+          recentIds: ['1F389', 'code', 'missing'],
         }}
       />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Favorites' }));
     expect(screen.getByRole('heading', { name: 'Your favorites' })).toBeInTheDocument();
-    await user.type(screen.getByRole('searchbox', { name: 'Search emojis' }), 'love');
+    await user.type(screen.getByRole('searchbox'), 'love');
     expect(await screen.findByRole('button', { name: 'Add blue heart' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     await user.click(screen.getByRole('button', { name: 'Recently used' }));
     expect(screen.getByRole('heading', { name: 'Recently used' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add party popper' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add code' })).toBeVisible();
   });
 
   it('quick-copies a tile, keeps the composer empty, and supports search shortcuts', async () => {
     const user = userEvent.setup();
     const copy = vi.fn().mockResolvedValue(copied());
-    render(<App initialCatalog={catalogFixture} copy={copy} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
     await user.click(screen.getByRole('button', { name: /copy a single emoji/i }));
     await user.click(screen.getByRole('button', { name: 'Copy grinning face' }));
 
     expect(copy).toHaveBeenCalledWith('😀');
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('');
     expect(screen.getByRole('status', { name: 'Copy status' })).toHaveTextContent(
       'grinning face copied',
     );
 
     await user.keyboard('/');
-    const search = screen.getByRole('searchbox', { name: 'Search emojis' });
+    const search = screen.getByRole('searchbox');
     expect(search).toHaveFocus();
     await user.type(search, 'party');
     await waitFor(() => expect(window.location.search).toContain('q=party'));
@@ -168,9 +281,9 @@ describe('Emoji Compass', () => {
       message: 'Copy was blocked. Press Command+C.',
       selection: null,
     } satisfies ClipboardResult);
-    render(<App initialCatalog={catalogFixture} copy={copy} />);
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
-    const search = screen.getByRole('searchbox', { name: 'Search emojis' });
+    const search = screen.getByRole('searchbox');
     await user.type(search, 'zzzz');
     expect(await screen.findByText('Nothing matched “zzzz”')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try celebration' }));
@@ -183,46 +296,60 @@ describe('Emoji Compass', () => {
 
   it('renders loading, error, and retry states around the catalog', async () => {
     const user = userEvent.setup();
-    const response = { ok: true, status: 200, json: vi.fn().mockResolvedValue(catalogFixture) };
-    const fetcher = vi.fn()
-      .mockRejectedValueOnce(new Error('Network unavailable'))
-      .mockResolvedValueOnce(response);
+    const responseEmoji = { ok: true, status: 200, json: vi.fn().mockResolvedValue(catalogFixture) };
+    const responseIcon = { ok: true, status: 200, json: vi.fn().mockResolvedValue(iconCatalogFixture) };
+    let callCount = 0;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      callCount += 1;
+      if (callCount === 1) return Promise.reject(new Error('Network unavailable'));
+      if (typeof url === 'string' && url.includes('icon')) {
+        return Promise.resolve(responseIcon);
+      }
+      return Promise.resolve(responseEmoji);
+    });
 
     render(<App fetcher={fetcher as unknown as typeof fetch} />);
-    expect(screen.getByText('Loading every emoji…')).toBeInTheDocument();
+    expect(screen.getByText('Loading every emoji and icon…')).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'Try loading again' }));
-    expect(await screen.findByRole('heading', { name: 'Find the emoji you mean' }))
+    expect(await screen.findByRole('heading', { name: 'Find the emoji or icon you mean' }))
       .toBeInTheDocument();
   });
 
-  it('starts from a shareable query and group URL', async () => {
-    window.history.replaceState({}, '', '/?q=happy&group=0');
+  it('starts from a shareable query, content type, and icon group URL', async () => {
+    window.history.replaceState({}, '', '/?q=arrow&type=icon&group=arrows');
     render(
       <App
         initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
         initialPreferences={{ ...createDefaultPreferences(), size: 'small' }}
       />,
     );
 
-    expect(screen.getByRole('searchbox', { name: 'Search emojis' })).toHaveValue('happy');
-    expect(screen.getByRole('button', { name: 'Smileys & emotion' }))
+    expect(screen.getByRole('searchbox')).toHaveValue('arrow');
+    expect(screen.getByRole('tab', { name: /Icons/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Arrows & Navigation' }))
       .toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('emoji-app')).toHaveAttribute('data-size', 'small');
   });
 
-  it('ignores invalid shared groups and can select a searched variant record', async () => {
+  it('ignores invalid shared groups, handles numeric groups, and can select a searched variant record', async () => {
     const user = userEvent.setup();
-    window.history.replaceState({}, '', '/?group=999');
-    render(<App initialCatalog={catalogFixture} />);
+    window.history.replaceState({}, '', '/?group=0');
+    const { unmount } = render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+    expect(screen.getByRole('button', { name: 'Smileys & emotion' })).toHaveAttribute('aria-pressed', 'true');
+    unmount();
 
-    expect(screen.getByRole('button', { name: 'All emojis' })).toHaveAttribute(
+    window.history.replaceState({}, '', '/?group=999');
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await user.type(screen.getByRole('searchbox', { name: 'Search emojis' }), 'dark skin tone');
+    await user.type(screen.getByRole('searchbox'), 'dark skin tone');
     await user.click(await screen.findByRole('button', {
       name: 'Add woman technologist: dark skin tone',
     }));
-    expect(screen.getByLabelText('Emoji composer')).toHaveValue('👩🏿‍💻');
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('👩🏿‍💻');
   });
 });

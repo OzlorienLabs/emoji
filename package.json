@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "generate:data": "node scripts/generate-emoji-data.mjs",
+    "generate:data": "node scripts/generate-emoji-data.mjs && node scripts/generate-icon-data.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "prebuild": "npm run generate:data",
     "build": "tsc -b && vite build",
@@ -40,6 +40,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "30.0.1",
+    "lucide-static": "^1.34.0",
     "typescript": "6.0.3",
     "typescript-eslint": "latest",
     "vite": "8.2.2",

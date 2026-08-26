@@ -1,8 +1,15 @@
 import { INTENT_ALIASES } from '../data/intent-aliases';
-import type { SearchableEmoji } from '../data/catalog-types';
+import type {
+  ContentType,
+  SearchableEmoji,
+  SearchableIcon,
+  SearchableItem,
+} from '../data/catalog-types';
 
-interface IndexedEmoji {
-  emoji: SearchableEmoji;
+interface IndexedItem {
+  item: SearchableItem;
+  kind: 'emoji' | 'icon';
+  group: number | string;
   name: string;
   nameTokens: readonly string[];
   keywordPhrases: readonly string[];
@@ -13,21 +20,29 @@ interface IndexedEmoji {
   allTokens: readonly string[];
 }
 
-export interface EmojiSearchIndex {
-  documents: readonly IndexedEmoji[];
+export interface ItemSearchIndex {
+  documents: readonly IndexedItem[];
 }
 
-export interface EmojiSearchOptions {
-  group?: number;
+export type EmojiSearchIndex = ItemSearchIndex;
+
+export interface ItemSearchOptions {
+  contentType?: ContentType;
+  group?: number | string;
   includeVariants?: boolean;
   limit?: number;
 }
 
-export interface EmojiSearchResult {
+export type EmojiSearchOptions = ItemSearchOptions;
+
+export interface ItemSearchResult {
+  item: SearchableItem;
   emoji: SearchableEmoji;
   score: number;
   matchedTerms: readonly string[];
 }
+
+export type EmojiSearchResult = ItemSearchResult;
 
 interface TokenMatch {
   score: number;
@@ -58,18 +73,26 @@ function tokensFrom(phrases: readonly string[]): string[] {
   return [...new Set(phrases.flatMap((phrase) => phrase.split(' ')).filter(Boolean))];
 }
 
-export function createSearchIndex(records: readonly SearchableEmoji[]): EmojiSearchIndex {
+function isIconItem(item: SearchableItem): item is SearchableIcon {
+  return 'nodes' in item;
+}
+
+export function createSearchIndex(records: readonly SearchableItem[]): ItemSearchIndex {
   return {
-    documents: records.map((emoji) => {
-      const name = normalizeSearchText(emoji.name);
-      const keywordPhrases = normalizedPhrases(emoji.keywords);
-      const shortcodePhrases = normalizedPhrases(emoji.shortcodes);
-      const allPhrases = normalizedPhrases(emoji.searchTerms);
+    documents: records.map((item) => {
+      const isIcon = isIconItem(item);
+      const name = normalizeSearchText(item.name);
+      const keywordPhrases = normalizedPhrases(isIcon ? item.tags : item.keywords);
+      const shortcodePhrases = normalizedPhrases(isIcon ? [item.kebabName, item.pascalName] : item.shortcodes);
+      const allPhrases = normalizedPhrases(item.searchTerms);
+      const group = isIcon ? item.category : item.group;
 
       return {
-        emoji,
+        item,
+        kind: isIcon ? 'icon' : 'emoji',
+        group,
         name,
-        nameTokens: tokensFrom([name]),
+        nameTokens: tokensFrom([name, ...(isIcon ? [item.kebabName, item.pascalName] : [])]),
         keywordPhrases,
         keywordTokens: tokensFrom(keywordPhrases),
         shortcodePhrases,
@@ -114,7 +137,7 @@ function boundedDistance(left: string, right: string, maximum: number): number {
   return previous[right.length] ?? maximum + 1;
 }
 
-function exactTokenScore(document: IndexedEmoji, candidate: string): number {
+function exactTokenScore(document: IndexedItem, candidate: string): number {
   if (document.nameTokens.includes(candidate)) return 240;
   if (document.keywordTokens.includes(candidate)) return 210;
   if (document.shortcodeTokens.includes(candidate)) return 200;
@@ -122,7 +145,7 @@ function exactTokenScore(document: IndexedEmoji, candidate: string): number {
   return 0;
 }
 
-function prefixTokenScore(document: IndexedEmoji, candidate: string): number {
+function prefixTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.length < 2) return 0;
   if (document.nameTokens.some((token) => token.startsWith(candidate))) return 165;
   if (document.keywordTokens.some((token) => token.startsWith(candidate))) return 150;
@@ -131,7 +154,7 @@ function prefixTokenScore(document: IndexedEmoji, candidate: string): number {
   return 0;
 }
 
-function substringTokenScore(document: IndexedEmoji, candidate: string): number {
+function substringTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.length < 3) return 0;
   if (document.nameTokens.some((token) => token.includes(candidate))) return 110;
   if (document.keywordTokens.some((token) => token.includes(candidate))) return 100;
@@ -139,7 +162,7 @@ function substringTokenScore(document: IndexedEmoji, candidate: string): number 
   return 0;
 }
 
-function fuzzyTokenScore(document: IndexedEmoji, candidate: string): number {
+function fuzzyTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.length < 4) return 0;
   const maximum = candidate.length >= 8 ? 2 : 1;
   const distance = document.allTokens.reduce(
@@ -158,13 +181,7 @@ function alternativesFor(token: string): readonly string[] {
   )];
 }
 
-/**
- * Scores a multi-word alias such as `thumbs up`. Every word must be present, so
- * the phrase cannot be satisfied by an unrelated emoji that happens to carry
- * only its weakest word (`up arrow`). The phrase scores as its weakest word so
- * a loose two-word match never outranks a strong single-word one.
- */
-function phraseAlternativeScore(document: IndexedEmoji, candidate: string): number {
+function phraseAlternativeScore(document: IndexedItem, candidate: string): number {
   if (document.name === candidate) return 260;
   if (document.allPhrases.includes(candidate)) return 230;
   if (document.name.includes(candidate)) return 220;
@@ -179,7 +196,7 @@ function phraseAlternativeScore(document: IndexedEmoji, candidate: string): numb
   return Number.isFinite(weakest) ? weakest : 0;
 }
 
-function directTokenScore(document: IndexedEmoji, candidate: string): number {
+function directTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.includes(' ')) return phraseAlternativeScore(document, candidate);
   return (
     exactTokenScore(document, candidate) ||
@@ -189,7 +206,7 @@ function directTokenScore(document: IndexedEmoji, candidate: string): number {
 }
 
 function createTokenPlan(
-  documents: readonly IndexedEmoji[],
+  documents: readonly IndexedItem[],
   queryToken: string,
 ): QueryTokenPlan {
   const alternatives = alternativesFor(queryToken);
@@ -200,7 +217,7 @@ function createTokenPlan(
   return { alternatives, allowFuzzy: !hasDirectMatch };
 }
 
-function matchToken(document: IndexedEmoji, plan: QueryTokenPlan): TokenMatch | undefined {
+function matchToken(document: IndexedItem, plan: QueryTokenPlan): TokenMatch | undefined {
   let best: TokenMatch | undefined;
 
   plan.alternatives.forEach((candidate, aliasIndex) => {
@@ -218,7 +235,7 @@ function matchToken(document: IndexedEmoji, plan: QueryTokenPlan): TokenMatch | 
   return best;
 }
 
-function phraseBoost(document: IndexedEmoji, query: string): number {
+function phraseBoost(document: IndexedItem, query: string): number {
   if (document.name === query) return 900;
   if (document.shortcodePhrases.includes(query)) return 700;
   if (document.keywordPhrases.includes(query)) return 600;
@@ -234,22 +251,37 @@ function queryRequestsVariant(rawQuery: string, normalizedQuery: string): boolea
   );
 }
 
-export function searchEmojis(
-  index: EmojiSearchIndex,
+export function searchItems(
+  index: ItemSearchIndex,
   rawQuery: string,
-  options: EmojiSearchOptions = {},
-): EmojiSearchResult[] {
+  options: ItemSearchOptions = {},
+): ItemSearchResult[] {
   const trimmedQuery = rawQuery.trim();
   const normalizedQuery = normalizeSearchText(trimmedQuery);
   const queryTokens = normalizedQuery ? normalizedQuery.split(' ') : [];
-  const exactGlyphMatches = index.documents.filter(
-    ({ emoji }) => emoji.glyph === trimmedQuery &&
-      (options.group === undefined || emoji.group === options.group),
+
+  const contentType = options.contentType ?? 'all';
+  const groupFilter = options.group;
+
+  const eligibleDocuments = index.documents.filter((doc) => {
+    if (contentType === 'emoji' && doc.kind !== 'emoji') return false;
+    if (contentType === 'icon' && doc.kind !== 'icon') return false;
+    if (groupFilter !== undefined && doc.group !== groupFilter) return false;
+    return true;
+  });
+
+  const exactGlyphMatches = eligibleDocuments.filter(
+    ({ item }) => !isIconItem(item) && item.glyph === trimmedQuery,
   );
 
   if (exactGlyphMatches.length > 0) {
     return exactGlyphMatches.slice(0, options.limit ?? exactGlyphMatches.length).map(
-      ({ emoji }) => ({ emoji, score: 2_000, matchedTerms: [trimmedQuery] }),
+      ({ item }) => ({
+        item,
+        emoji: item as SearchableEmoji,
+        score: 2_000,
+        matchedTerms: [trimmedQuery],
+      }),
     );
   }
 
@@ -257,11 +289,7 @@ export function searchEmojis(
     return [];
   }
 
-  const results: EmojiSearchResult[] = [];
-  const eligibleDocuments =
-    options.group === undefined
-      ? index.documents
-      : index.documents.filter(({ emoji }) => emoji.group === options.group);
+  const results: ItemSearchResult[] = [];
   const tokenPlans = queryTokens.map((token) => createTokenPlan(eligibleDocuments, token));
 
   eligibleDocuments.forEach((document) => {
@@ -275,7 +303,8 @@ export function searchEmojis(
     }
 
     results.push({
-      emoji: document.emoji,
+      item: document.item,
+      emoji: document.item as SearchableEmoji,
       score:
         confirmedMatches.reduce((total, match) => total + match.score, 0) +
         phraseBoost(document, normalizedQuery),
@@ -286,27 +315,31 @@ export function searchEmojis(
   results.sort(
     (left, right) =>
       right.score - left.score ||
-      left.emoji.order - right.emoji.order ||
-      left.emoji.id.localeCompare(right.emoji.id),
+      left.item.order - right.item.order ||
+      left.item.id.localeCompare(right.item.id),
   );
 
   const keepVariants =
     options.includeVariants === true ||
     queryRequestsVariant(rawQuery, normalizedQuery) ||
-    results.some(({ emoji }) => getNormalizedCodePoints(emoji.id) === normalizedQuery);
+    results.some(({ item }) => !isIconItem(item) && getNormalizedCodePoints(item.id) === normalizedQuery);
+
   const seenFamilies = new Set<string>();
   const filtered = keepVariants
     ? results
-    : results.filter(({ emoji }) => {
-        if (seenFamilies.has(emoji.familyId)) {
+    : results.filter(({ item }) => {
+        if (isIconItem(item)) return true;
+        if (seenFamilies.has(item.familyId)) {
           return false;
         }
-        seenFamilies.add(emoji.familyId);
+        seenFamilies.add(item.familyId);
         return true;
       });
 
   return filtered.slice(0, options.limit ?? filtered.length);
 }
+
+export const searchEmojis = searchItems;
 
 function getNormalizedCodePoints(id: string): string {
   return normalizeSearchText(

@@ -1,15 +1,62 @@
 import { describe, expect, it } from 'vitest';
+import type { IconRecord } from '../data/catalog-types';
 import {
   MAX_UNDO_ENTRIES,
   appendToComposer,
   clearComposer,
   commitComposerValue,
   countGraphemes,
+  countSelectedContent,
   countSelectedEmojis,
   createComposerHistory,
+  formatSelectedCount,
   insertAtSelection,
+  parseComposerTokens,
+  placeCaretAtEnd,
   undoComposer,
 } from './composer';
+
+const iconFixture: IconRecord = {
+  id: 'fingerprint-pattern',
+  name: 'fingerprint pattern',
+  kebabName: 'fingerprint-pattern',
+  pascalName: 'FingerprintPattern',
+  category: 'interface',
+  categoryLabel: 'Interface & Controls',
+  tags: ['security', 'biometrics'],
+  nodes: [['path', { d: 'M12 2v20' }]],
+  order: 1,
+};
+
+const scanFaceFixture: IconRecord = {
+  id: 'scan-face',
+  name: 'scan face',
+  kebabName: 'scan-face',
+  pascalName: 'ScanFace',
+  category: 'interface',
+  categoryLabel: 'Interface & Controls',
+  tags: ['camera', 'face'],
+  nodes: [['path', { d: 'M4 8V4h4' }]],
+  order: 2,
+};
+
+const adFixture: IconRecord = {
+  id: 'ad',
+  name: 'ad',
+  kebabName: 'ad',
+  pascalName: 'Ad',
+  category: 'interface',
+  categoryLabel: 'Interface & Controls',
+  tags: ['marketing', 'commercial'],
+  nodes: [['path', { d: 'M2 2h20v20H2z' }]],
+  order: 3,
+};
+
+const testIconMap = new Map<string, IconRecord>([
+  ['fingerprint-pattern', iconFixture],
+  ['scan-face', scanFaceFixture],
+  ['ad', adFixture],
+]);
 
 describe('insertAtSelection', () => {
   it('replaces a UTF-16 textarea selection and returns the collapsed next caret', () => {
@@ -131,5 +178,80 @@ describe('grapheme-safe counts', () => {
         Object.defineProperty(Intl, 'Segmenter', segmenterDescriptor);
       }
     }
+  });
+});
+
+describe('token parsing and mixed content counting', () => {
+  it('parses mixed strings of icons, emojis, and plain text', () => {
+    const input = ':fingerprint-pattern::scan-face:😗😚😂:ad::ad:';
+    const tokens = parseComposerTokens(input, testIconMap);
+
+    expect(tokens).toHaveLength(5);
+    expect(tokens[0]).toEqual({
+      type: 'icon',
+      value: ':fingerprint-pattern:',
+      icon: iconFixture,
+    });
+    expect(tokens[1]).toEqual({
+      type: 'icon',
+      value: ':scan-face:',
+      icon: scanFaceFixture,
+    });
+    expect(tokens[2]).toEqual({
+      type: 'text',
+      value: '😗😚😂',
+    });
+    expect(tokens[3]).toEqual({
+      type: 'icon',
+      value: ':ad:',
+      icon: adFixture,
+    });
+    expect(tokens[4]).toEqual({
+      type: 'icon',
+      value: ':ad:',
+      icon: adFixture,
+    });
+    expect(tokens[5]).toBeUndefined();
+  });
+
+  it('handles empty input, text-only, and unrecognized icon shortcodes', () => {
+    expect(parseComposerTokens('')).toEqual([]);
+    expect(parseComposerTokens('hello world')).toEqual([{ type: 'text', value: 'hello world' }]);
+    expect(parseComposerTokens(':unknown-code:')).toEqual([{ type: 'text', value: ':unknown-code:' }]);
+  });
+
+  it('counts and formats selected counts accurately for emojis and icons', () => {
+    const input = ':fingerprint-pattern::scan-face:😗😚😂:ad::ad:';
+    const counts = countSelectedContent(input, testIconMap);
+
+    expect(counts).toEqual({
+      emojiCount: 3,
+      iconCount: 4,
+      totalCount: 7,
+    });
+
+    expect(formatSelectedCount(input, testIconMap)).toBe('3 emojis, 4 icons selected');
+    expect(formatSelectedCount('😀:ad:', testIconMap)).toBe('1 emoji, 1 icon selected');
+    expect(formatSelectedCount('😀😁:ad:', testIconMap)).toBe('2 emojis, 1 icon selected');
+    expect(formatSelectedCount(':ad::ad:', testIconMap)).toBe('2 icons selected');
+    expect(formatSelectedCount('😀', testIconMap)).toBe('1 emoji selected');
+    expect(formatSelectedCount(':ad:', testIconMap)).toBe('1 icon selected');
+    expect(formatSelectedCount('', testIconMap)).toBe('0 emojis selected');
+  });
+
+  it('places caret at the end of an element', () => {
+    const div = document.createElement('div');
+    div.textContent = 'hello world';
+    document.body.appendChild(div);
+
+    placeCaretAtEnd(div);
+    const sel = window.getSelection();
+    expect(sel?.rangeCount).toBeGreaterThan(0);
+
+    const getSelectionSpy = vi.spyOn(window, 'getSelection').mockReturnValue(null);
+    expect(() => placeCaretAtEnd(div)).not.toThrow();
+    getSelectionSpy.mockRestore();
+
+    div.remove();
   });
 });

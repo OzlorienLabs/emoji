@@ -2,6 +2,8 @@ export type SkinTone = 1 | 2 | 3 | 4 | 5;
 export type EmojiTone = SkinTone | readonly SkinTone[];
 export type EmojiSize = 'small' | 'medium' | 'large';
 export type EmojiStyle = 'native' | 'text';
+export type ContentType = 'all' | 'emoji' | 'icon';
+export type IconCopyFormat = 'svg' | 'jsx' | 'name' | 'html';
 
 export interface EmojiVariant {
   id: string;
@@ -49,6 +51,7 @@ export interface EmojiCatalog {
 }
 
 export interface SearchableEmoji extends EmojiVariant {
+  kind?: 'emoji';
   familyId: string;
   group: number;
   subgroup: number;
@@ -58,3 +61,41 @@ export interface SearchableEmoji extends EmojiVariant {
   shortcodes: readonly string[];
   searchTerms: readonly string[];
 }
+
+export type IconNode = readonly [string, Readonly<Record<string, string>>];
+
+export interface IconRecord {
+  id: string;
+  name: string;
+  kebabName: string;
+  pascalName: string;
+  category: string;
+  categoryLabel: string;
+  tags: readonly string[];
+  nodes: readonly IconNode[];
+  order: number;
+}
+
+export interface IconCategory {
+  id: string;
+  label: string;
+  icon: string;
+  count?: number;
+}
+
+export interface IconCatalog {
+  source: string;
+  version: string;
+  totalCount: number;
+  checksum: string;
+  categories: readonly IconCategory[];
+  icons: readonly IconRecord[];
+}
+
+export interface SearchableIcon extends IconRecord {
+  kind: 'icon';
+  searchTerms: readonly string[];
+}
+
+export type SearchableItem = SearchableEmoji | SearchableIcon;
+export type CatalogItem = EmojiFamily | SearchableEmoji | IconRecord | SearchableIcon;

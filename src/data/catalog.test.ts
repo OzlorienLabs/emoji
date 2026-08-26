@@ -2,13 +2,28 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { EmojiCatalog } from './catalog-types';
-import { flattenCatalog, getCodePointLabel, validateCatalog } from './catalog';
+import type { EmojiCatalog, IconCatalog } from './catalog-types';
+import {
+  flattenCatalog,
+  flattenIconCatalog,
+  getCodePointLabel,
+  getIconHtml,
+  getIconJsx,
+  getIconSvg,
+  validateCatalog,
+  validateIconCatalog,
+} from './catalog';
 
 function readGeneratedCatalog(): EmojiCatalog {
   return JSON.parse(
     readFileSync(resolve(process.cwd(), 'public/data/emoji-en-17.0.json'), 'utf8'),
   ) as EmojiCatalog;
+}
+
+function readGeneratedIconCatalog(): IconCatalog {
+  return JSON.parse(
+    readFileSync(resolve(process.cwd(), 'public/data/icons-1.34.json'), 'utf8'),
+  ) as IconCatalog;
 }
 
 describe('generated Emoji 17 catalog', () => {
@@ -95,6 +110,53 @@ describe('generated Emoji 17 catalog', () => {
   });
 });
 
+describe('generated Lucide icon catalog', () => {
+  it('contains every ordered icon entry with nodes and tags', () => {
+    const iconCatalog = readGeneratedIconCatalog();
+    const records = flattenIconCatalog(iconCatalog);
+
+    expect(iconCatalog.source).toBe('lucide-static@1.34.0');
+    expect(iconCatalog.totalCount).toBe(1_777);
+    expect(records).toHaveLength(1_777);
+    expect(new Set(records.map(({ id }) => id)).size).toBe(1_777);
+    expect(iconCatalog.categories.length).toBeGreaterThan(5);
+  });
+
+  it('generates rich search terms for icons including name, tags, and category', () => {
+    const iconCatalog = readGeneratedIconCatalog();
+    const records = flattenIconCatalog(iconCatalog);
+    const arrow = records.find(({ id }) => id === 'arrow-right');
+
+    expect(arrow).toBeDefined();
+    expect(arrow?.kind).toBe('icon');
+    expect(arrow?.searchTerms).toEqual(
+      expect.arrayContaining(['arrow right', 'arrow', 'right', 'arrowright', 'forward', 'next', 'direction']),
+    );
+  });
+
+  it('validates generated icon metadata without issues', () => {
+    expect(validateIconCatalog(readGeneratedIconCatalog())).toEqual([]);
+  });
+
+  it('formats SVG, JSX, and HTML tags accurately', () => {
+    const iconCatalog = readGeneratedIconCatalog();
+    const arrow = iconCatalog.icons.find(({ id }) => id === 'arrow-right')!;
+
+    const svg = getIconSvg(arrow, { size: 32, strokeWidth: 1.5 });
+    expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"');
+    expect(svg).toContain('stroke-width="1.5"');
+    expect(svg).toContain('<path');
+    expect(getIconSvg(arrow)).toContain('width="24"');
+
+    const jsx = getIconJsx(arrow, { size: 24, strokeWidth: 2 });
+    expect(jsx).toBe('<ArrowRight size={24} strokeWidth={2} />');
+    expect(getIconJsx(arrow)).toBe('<ArrowRight />');
+
+    const html = getIconHtml(arrow);
+    expect(html).toBe('<i data-lucide="arrow-right"></i>');
+  });
+});
+
 describe('catalog validation', () => {
   it('reports inconsistent counts, duplicates, and missing labels', () => {
     const catalog = readGeneratedCatalog();
@@ -117,6 +179,29 @@ describe('catalog validation', () => {
         'Total count does not match catalog metadata.',
         'Emoji IDs must be unique.',
         'Every emoji needs a name.',
+      ]),
+    );
+  });
+
+  it('reports invalid icon catalogs', () => {
+    const iconCatalog = readGeneratedIconCatalog();
+    const first = iconCatalog.icons[0]!;
+
+    const invalid: IconCatalog = {
+      ...iconCatalog,
+      totalCount: 99,
+      icons: [
+        { ...first, name: '', nodes: [] },
+        first,
+      ],
+    };
+
+    expect(validateIconCatalog(invalid)).toEqual(
+      expect.arrayContaining([
+        'Total count does not match icons list length.',
+        'Icon IDs must be unique.',
+        'Every icon needs a name.',
+        'Every icon needs at least one SVG node.',
       ]),
     );
   });

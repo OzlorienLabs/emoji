@@ -1,6 +1,8 @@
 import type {
+  ContentType,
   EmojiSize as CatalogEmojiSize,
   EmojiStyle as CatalogEmojiStyle,
+  IconCopyFormat,
 } from '../data/catalog-types';
 
 export type EmojiSize = CatalogEmojiSize;
@@ -14,6 +16,8 @@ export interface EmojiPreferences {
   tone: EmojiTone;
   theme: ThemePreference;
   quickCopy: boolean;
+  contentType: ContentType;
+  iconCopyFormat: IconCopyFormat;
   favoriteIds: readonly string[];
   recentIds: readonly string[];
 }
@@ -33,6 +37,8 @@ export const DEFAULT_PREFERENCES: Readonly<EmojiPreferences> = Object.freeze({
   tone: 0,
   theme: 'system',
   quickCopy: false,
+  contentType: 'all',
+  iconCopyFormat: 'svg',
   favoriteIds: Object.freeze([]) as readonly string[],
   recentIds: Object.freeze([]) as readonly string[],
 });
@@ -68,7 +74,18 @@ function sanitizeIds(value: unknown, limit: number): string[] {
 export function sanitizePreferences(value: unknown): EmojiPreferences {
   if (!isRecord(value)) return createDefaultPreferences();
 
-  const { size, style, tone, theme, quickCopy, favoriteIds, recentIds } = value;
+  const {
+    size,
+    style,
+    tone,
+    theme,
+    quickCopy,
+    contentType,
+    iconCopyFormat,
+    favoriteIds,
+    recentIds,
+  } = value;
+
   return {
     size: size === 'small' || size === 'medium' || size === 'large' ? size : 'medium',
     style: style === 'native' || style === 'text' ? style : 'native',
@@ -78,6 +95,17 @@ export function sanitizePreferences(value: unknown): EmojiPreferences {
         : 0,
     theme: theme === 'system' || theme === 'light' || theme === 'dark' ? theme : 'system',
     quickCopy: typeof quickCopy === 'boolean' ? quickCopy : false,
+    contentType:
+      contentType === 'all' || contentType === 'emoji' || contentType === 'icon'
+        ? contentType
+        : 'all',
+    iconCopyFormat:
+      iconCopyFormat === 'svg' ||
+      iconCopyFormat === 'jsx' ||
+      iconCopyFormat === 'name' ||
+      iconCopyFormat === 'html'
+        ? iconCopyFormat
+        : 'svg',
     favoriteIds: sanitizeIds(favoriteIds, MAX_FAVORITES),
     recentIds: sanitizeIds(recentIds, MAX_RECENTS),
   };

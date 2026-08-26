@@ -35,8 +35,10 @@ describe('sanitizePreferences', () => {
         tone: 5,
         theme: 'dark',
         quickCopy: true,
-        favoriteIds: ['wave', 'heart'],
-        recentIds: ['smile', 'party'],
+        contentType: 'icon',
+        iconCopyFormat: 'jsx',
+        favoriteIds: ['wave', 'heart', 'arrow-right'],
+        recentIds: ['smile', 'party', 'download'],
       }),
     ).toEqual({
       size: 'large',
@@ -44,8 +46,10 @@ describe('sanitizePreferences', () => {
       tone: 5,
       theme: 'dark',
       quickCopy: true,
-      favoriteIds: ['wave', 'heart'],
-      recentIds: ['smile', 'party'],
+      contentType: 'icon',
+      iconCopyFormat: 'jsx',
+      favoriteIds: ['wave', 'heart', 'arrow-right'],
+      recentIds: ['smile', 'party', 'download'],
     });
   });
 
@@ -57,6 +61,8 @@ describe('sanitizePreferences', () => {
         tone: 9,
         theme: 'midnight',
         quickCopy: 'yes',
+        contentType: 'unknown-mode',
+        iconCopyFormat: 'invalid-format',
         favoriteIds: 'wave',
         recentIds: {},
         searchText: 'private query',
@@ -152,7 +158,9 @@ describe('savePreferences', () => {
       tone: 4,
       theme: 'light',
       quickCopy: true,
-      favoriteIds: ['heart', 'heart'],
+      contentType: 'all',
+      iconCopyFormat: 'svg',
+      favoriteIds: ['heart', 'heart', 'arrow-right'],
       recentIds: ['wave'],
       searchText: 'sympathy',
       composerText: '❤️',
@@ -166,7 +174,9 @@ describe('savePreferences', () => {
       tone: 4,
       theme: 'light',
       quickCopy: true,
-      favoriteIds: ['heart'],
+      contentType: 'all',
+      iconCopyFormat: 'svg',
+      favoriteIds: ['heart', 'arrow-right'],
       recentIds: ['wave'],
     });
     expect(loadPreferences(storage)).toEqual({
@@ -175,7 +185,9 @@ describe('savePreferences', () => {
       tone: 4,
       theme: 'light',
       quickCopy: true,
-      favoriteIds: ['heart'],
+      contentType: 'all',
+      iconCopyFormat: 'svg',
+      favoriteIds: ['heart', 'arrow-right'],
       recentIds: ['wave'],
     });
   });
@@ -204,6 +216,8 @@ describe('preference updates', () => {
     const patch = {
       size: 'large' as const,
       theme: 'dark' as const,
+      contentType: 'icon' as const,
+      iconCopyFormat: 'jsx' as const,
       searchText: 'do not retain',
     };
 
@@ -213,6 +227,8 @@ describe('preference updates', () => {
       ...original,
       size: 'large',
       theme: 'dark',
+      contentType: 'icon',
+      iconCopyFormat: 'jsx',
     });
     expect(original.size).toBe('small');
     expect(updated).not.toBe(original);
@@ -222,11 +238,13 @@ describe('preference updates', () => {
     const original = sanitizePreferences({ favoriteIds: ['heart'] });
 
     const added = toggleFavorite(original, ' wave ');
-    const removed = toggleFavorite(added, 'heart');
+    const addedIcon = toggleFavorite(added, 'arrow-right');
+    const removed = toggleFavorite(addedIcon, 'heart');
 
     expect(original.favoriteIds).toEqual(['heart']);
     expect(added.favoriteIds).toEqual(['wave', 'heart']);
-    expect(removed.favoriteIds).toEqual(['wave']);
+    expect(addedIcon.favoriteIds).toEqual(['arrow-right', 'wave', 'heart']);
+    expect(removed.favoriteIds).toEqual(['arrow-right', 'wave']);
   });
 
   it('keeps favorites unique and capped after an update', () => {

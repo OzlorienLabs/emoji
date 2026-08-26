@@ -2,7 +2,10 @@ import type {
   EmojiCatalog,
   EmojiFamily,
   EmojiVariant,
+  IconCatalog,
+  IconRecord,
   SearchableEmoji,
+  SearchableIcon,
 } from './catalog-types';
 
 function normalizeTerm(value: string): string {
@@ -71,6 +74,7 @@ export function flattenCatalog(catalog: EmojiCatalog): SearchableEmoji[] {
 
     return records.map((emoji) => ({
       ...emoji,
+      kind: 'emoji' as const,
       familyId: family.id,
       group: family.group,
       subgroup: family.subgroup,
@@ -127,4 +131,88 @@ export function validateCatalog(catalog: EmojiCatalog): string[] {
   );
 
   return issues;
+}
+
+function buildIconSearchTerms(icon: IconRecord): string[] {
+  const values = [
+    icon.name,
+    icon.kebabName,
+    icon.pascalName,
+    icon.category,
+    icon.categoryLabel,
+    ...icon.tags,
+    `icon ${icon.name}`,
+  ];
+
+  return [...new Set(values.flatMap(expandTerm))];
+}
+
+export function flattenIconCatalog(catalog: IconCatalog): SearchableIcon[] {
+  return catalog.icons
+    .map((icon) => ({
+      ...icon,
+      kind: 'icon' as const,
+      searchTerms: buildIconSearchTerms(icon),
+    }))
+    .sort((left, right) => left.order - right.order);
+}
+
+export function validateIconCatalog(catalog: IconCatalog): string[] {
+  const issues: string[] = [];
+  const addIssue = (condition: boolean, message: string) => {
+    if (condition) {
+      issues.push(message);
+    }
+  };
+
+  addIssue(
+    catalog.totalCount !== catalog.icons.length,
+    'Total count does not match icons list length.',
+  );
+  addIssue(
+    new Set(catalog.icons.map(({ id }) => id)).size !== catalog.icons.length,
+    'Icon IDs must be unique.',
+  );
+  addIssue(catalog.icons.some(({ name }) => !name.trim()), 'Every icon needs a name.');
+  addIssue(
+    catalog.icons.some(({ nodes }) => !nodes || nodes.length === 0),
+    'Every icon needs at least one SVG node.',
+  );
+  addIssue(
+    catalog.icons.some((record, index) => index > 0 && record.order <= catalog.icons[index - 1]!.order),
+    'Icon records must follow strict numerical order.',
+  );
+
+  return issues;
+}
+
+export function getIconSvg(
+  icon: IconRecord,
+  options: { size?: number | string; strokeWidth?: number | string } = {},
+): string {
+  const size = options.size ?? 24;
+  const strokeWidth = options.strokeWidth ?? 2;
+  const innerNodes = icon.nodes
+    .map(([tag, attrs]) => {
+      const attributes = Object.entries(attrs)
+        .map(([key, val]) => `${key}="${val}"`)
+        .join(' ');
+      return `<${tag} ${attributes} />`;
+    })
+    .join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${innerNodes}</svg>`;
+}
+
+export function getIconJsx(
+  icon: IconRecord,
+  options: { size?: number | string; strokeWidth?: number | string } = {},
+): string {
+  const size = options.size ? ` size={${options.size}}` : '';
+  const strokeWidth = options.strokeWidth ? ` strokeWidth={${options.strokeWidth}}` : '';
+  return `<${icon.pascalName}${size}${strokeWidth} />`;
+}
+
+export function getIconHtml(icon: IconRecord): string {
+  return `<i data-lucide="${icon.kebabName}"></i>`;
 }

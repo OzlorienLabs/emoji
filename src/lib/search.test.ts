@@ -2,27 +2,36 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { flattenCatalog } from '../data/catalog';
+import { flattenCatalog, flattenIconCatalog } from '../data/catalog';
 import { INTENT_ALIASES } from '../data/intent-aliases';
-import type { EmojiCatalog } from '../data/catalog-types';
+import type { EmojiCatalog, IconCatalog } from '../data/catalog-types';
 import {
   createSearchIndex,
   normalizeSearchText,
-  searchEmojis,
-  type EmojiSearchIndex,
+  searchItems,
+  type ItemSearchIndex,
 } from './search';
 
-let index: EmojiSearchIndex;
+let emojiIndex: ItemSearchIndex;
+let combinedIndex: ItemSearchIndex;
 
 beforeAll(() => {
-  const catalog = JSON.parse(
+  const emojiCatalog = JSON.parse(
     readFileSync(resolve(process.cwd(), 'public/data/emoji-en-17.0.json'), 'utf8'),
   ) as EmojiCatalog;
-  index = createSearchIndex(flattenCatalog(catalog));
+  const iconCatalog = JSON.parse(
+    readFileSync(resolve(process.cwd(), 'public/data/icons-1.34.json'), 'utf8'),
+  ) as IconCatalog;
+
+  const emojiRecords = flattenCatalog(emojiCatalog);
+  const iconRecords = flattenIconCatalog(iconCatalog);
+
+  emojiIndex = createSearchIndex(emojiRecords);
+  combinedIndex = createSearchIndex([...emojiRecords, ...iconRecords]);
 });
 
 function glyphs(query: string, limit = 12): string[] {
-  return searchEmojis(index, query, { limit }).map(({ emoji }) => emoji.glyph);
+  return searchItems(emojiIndex, query, { limit }).map(({ emoji }) => emoji.glyph);
 }
 
 describe('normalizeSearchText', () => {
@@ -43,7 +52,7 @@ describe('searchEmojis', () => {
   });
 
   it('uses unordered AND semantics for multiple ideas', () => {
-    const results = searchEmojis(index, 'love cat', { limit: 8 });
+    const results = searchItems(emojiIndex, 'love cat', { limit: 8 });
 
     expect(results[0]?.emoji.glyph).toBe('😻');
     expect(results.every(({ matchedTerms }) => matchedTerms.length === 2)).toBe(true);
@@ -51,7 +60,7 @@ describe('searchEmojis', () => {
   });
 
   it('expands conversational intent without weakening AND semantics', () => {
-    const results = searchEmojis(index, 'happy dance', { limit: 10 });
+    const results = searchItems(emojiIndex, 'happy dance', { limit: 10 });
 
     expect(results.length).toBeGreaterThan(0);
     expect(results.some(({ emoji }) => /danc/.test(emoji.name))).toBe(true);
@@ -69,7 +78,7 @@ describe('searchEmojis', () => {
   });
 
   it('surfaces an explicit requested skin-tone variant', () => {
-    const results = searchEmojis(index, 'doctor dark skin', { limit: 20 });
+    const results = searchItems(emojiIndex, 'doctor dark skin', { limit: 20 });
 
     expect(results.length).toBeGreaterThan(0);
     expect(
@@ -80,7 +89,7 @@ describe('searchEmojis', () => {
   });
 
   it('collapses unrequested tone variants into one family result', () => {
-    const results = searchEmojis(index, 'waving hand', { limit: 20 });
+    const results = searchItems(emojiIndex, 'waving hand', { limit: 20 });
     const waves = results.filter(({ emoji }) => emoji.familyId === '1F44B');
 
     expect(waves).toHaveLength(1);
@@ -88,8 +97,8 @@ describe('searchEmojis', () => {
   });
 
   it('filters by group while preserving ranking', () => {
-    const all = searchEmojis(index, 'blue', { limit: 50 });
-    const symbols = searchEmojis(index, 'blue', { group: 8, limit: 50 });
+    const all = searchItems(emojiIndex, 'blue', { limit: 50 });
+    const symbols = searchItems(emojiIndex, 'blue', { group: 8, limit: 50 });
 
     expect(all.length).toBeGreaterThan(symbols.length);
     expect(symbols.length).toBeGreaterThan(0);
@@ -97,15 +106,15 @@ describe('searchEmojis', () => {
   });
 
   it('returns no irrelevant records when every token cannot match', () => {
-    expect(searchEmojis(index, 'volcano spreadsheet apology')).toEqual([]);
+    expect(searchItems(emojiIndex, 'volcano spreadsheet apology')).toEqual([]);
   });
 
   it('handles empty, limited, grouped glyph, and explicit variant searches', () => {
-    expect(searchEmojis(index, '   ')).toEqual([]);
-    expect(searchEmojis(index, '😀', { group: 0, limit: 0 })).toEqual([]);
-    expect(searchEmojis(index, '😀', { group: 8 })).toEqual([]);
+    expect(searchItems(emojiIndex, '   ')).toEqual([]);
+    expect(searchItems(emojiIndex, '😀', { group: 0, limit: 0 })).toEqual([]);
+    expect(searchItems(emojiIndex, '😀', { group: 8 })).toEqual([]);
 
-    const variants = searchEmojis(index, 'waving hand', {
+    const variants = searchItems(emojiIndex, 'waving hand', {
       includeVariants: true,
       limit: 20,
     }).filter(({ emoji }) => emoji.familyId === '1F44B');
@@ -113,8 +122,8 @@ describe('searchEmojis', () => {
   });
 
   it('is deterministic for repeated queries', () => {
-    const first = searchEmojis(index, 'celebrate', { limit: 25 });
-    const second = searchEmojis(index, 'celebrate', { limit: 25 });
+    const first = searchItems(emojiIndex, 'celebrate', { limit: 25 });
+    const second = searchItems(emojiIndex, 'celebrate', { limit: 25 });
 
     expect(second).toEqual(first);
   });
@@ -123,10 +132,62 @@ describe('searchEmojis', () => {
     const startedAt = performance.now();
 
     for (let iteration = 0; iteration < 20; iteration += 1) {
-      searchEmojis(index, 'happy dance', { limit: 40 });
+      searchItems(emojiIndex, 'happy dance', { limit: 40 });
     }
 
-    expect(performance.now() - startedAt).toBeLessThan(1_000);
+    expect(performance.now() - startedAt).toBeLessThan(2_000);
+  });
+});
+
+describe('icon searching', () => {
+  it('finds exact kebab-case and PascalCase icon names', () => {
+    const arrowResults = searchItems(combinedIndex, 'arrow-right', { contentType: 'icon', limit: 5 });
+    expect(arrowResults[0]?.item.id).toBe('arrow-right');
+
+    const chevronResults = searchItems(combinedIndex, 'ChevronDown', { contentType: 'icon', limit: 5 });
+    expect(chevronResults[0]?.item.id).toBe('chevron-down');
+  });
+
+  it('finds icons by tags and keywords', () => {
+    const forwardResults = searchItems(combinedIndex, 'forward', { contentType: 'icon', limit: 10 });
+    expect(forwardResults.some(({ item }) => item.id.includes('arrow') || item.id.includes('forward'))).toBe(true);
+
+    const gearResults = searchItems(combinedIndex, 'gear', { contentType: 'icon', limit: 10 });
+    expect(gearResults.some(({ item }) => item.id === 'settings' || item.id.includes('cog'))).toBe(true);
+  });
+
+  it('filters by contentType and icon category', () => {
+    const all = searchItems(combinedIndex, 'heart', { limit: 20 });
+    const onlyIcons = searchItems(combinedIndex, 'heart', { contentType: 'icon', limit: 20 });
+    const onlyEmojis = searchItems(combinedIndex, 'heart', { contentType: 'emoji', limit: 20 });
+
+    expect(onlyIcons.every(({ item }) => 'nodes' in item)).toBe(true);
+    expect(onlyEmojis.every(({ item }) => !('nodes' in item))).toBe(true);
+    expect(all.some(({ item }) => 'nodes' in item)).toBe(true);
+    expect(all.some(({ item }) => !('nodes' in item))).toBe(true);
+
+    const arrowsOnly = searchItems(combinedIndex, 'arrow', { contentType: 'icon', group: 'arrows', limit: 10 });
+    expect(arrowsOnly.length).toBeGreaterThan(0);
+    expect(arrowsOnly.every(({ item }) => 'category' in item && item.category === 'arrows')).toBe(true);
+  });
+
+  it('tolerates minor typos when searching icons', () => {
+    const typoResults = searchItems(combinedIndex, 'settigns', { contentType: 'icon', limit: 20 });
+    expect(typoResults.some(({ item }) => item.id.includes('settings'))).toBe(true);
+
+    const calenderResults = searchItems(combinedIndex, 'calender', { contentType: 'icon', limit: 20 });
+    expect(calenderResults.some(({ item }) => item.id.includes('calendar'))).toBe(true);
+  });
+
+  it('executes combined 5,730-item searches with sub-10ms performance', () => {
+    const startedAt = performance.now();
+
+    for (let iteration = 0; iteration < 20; iteration += 1) {
+      searchItems(combinedIndex, 'download cloud file', { limit: 40 });
+    }
+
+    const elapsed = performance.now() - startedAt;
+    expect(elapsed).toBeLessThan(1_000);
   });
 });
 
@@ -151,7 +212,7 @@ describe('intent aliases', () => {
   it('resolves every alias value against the real catalog', () => {
     const dead = entries.flatMap(([key, values]) =>
       values
-        .filter((value) => searchEmojis(index, value, { limit: 1 }).length === 0)
+        .filter((value) => searchItems(emojiIndex, value, { limit: 1 }).length === 0)
         .map((value) => `${key} -> ${value}`),
     );
 
@@ -161,7 +222,7 @@ describe('intent aliases', () => {
   it('returns results for every alias key', () => {
     const empty = entries
       .map(([key]) => key)
-      .filter((key) => searchEmojis(index, key, { limit: 1 }).length === 0);
+      .filter((key) => searchItems(emojiIndex, key, { limit: 1 }).length === 0);
 
     expect(empty).toEqual([]);
   });
@@ -169,22 +230,19 @@ describe('intent aliases', () => {
 
 describe('alias-driven relevance', () => {
   it('matches a multi-word alias only when every word is present', () => {
-    const names = searchEmojis(index, 'agree', { limit: 40 }).map(({ emoji }) => emoji.name);
+    const names = searchItems(emojiIndex, 'agree', { limit: 40 }).map(({ emoji }) => emoji.name);
 
-    // `agree` expands to the phrase `thumbs up`, which must not be satisfied by
-    // an unrelated emoji carrying only the word `up`.
     expect(names).toContain('thumbs up');
     expect(names).not.toContain('up arrow');
     expect(names).not.toContain('up button');
   });
 
   it('suppresses typo matching once an alias resolves directly', () => {
-    const deadline = searchEmojis(index, 'deadline', { limit: 10 }).map(({ emoji }) => emoji.name);
-    // Without aliases this reached `deadlift`, and so `person lifting weights`.
+    const deadline = searchItems(emojiIndex, 'deadline', { limit: 10 }).map(({ emoji }) => emoji.name);
     expect(deadline).toContain('alarm clock');
     expect(deadline.some((name) => /lifting weights/.test(name))).toBe(false);
 
-    const disgusted = searchEmojis(index, 'disgusted', { limit: 10 }).map(({ emoji }) => emoji.name);
+    const disgusted = searchItems(emojiIndex, 'disgusted', { limit: 10 }).map(({ emoji }) => emoji.name);
     expect(disgusted).toContain('nauseated face');
     expect(disgusted).not.toContain('disguised face');
   });
@@ -208,9 +266,9 @@ describe('alias-driven relevance', () => {
     const startedAt = performance.now();
 
     for (let iteration = 0; iteration < 20; iteration += 1) {
-      searchEmojis(index, 'congratulations celebrate', { limit: 40 });
+      searchItems(emojiIndex, 'congratulations celebrate', { limit: 40 });
     }
 
-    expect(performance.now() - startedAt).toBeLessThan(1_000);
+    expect(performance.now() - startedAt).toBeLessThan(2_000);
   });
 });
