@@ -2,6 +2,10 @@
 
 Emoji Compass is a fast, meaning-first emoji finder and composer. Search for an idea such as `blue heart`, `happy dance`, or `work computer`, choose the exact emoji or skin-tone variant, build a message, and copy the original Unicode string. The app is a static React site with no account, ads, analytics, runtime API, or database.
 
+### Release Version
+
+Release 1.0.1
+
 ## What it includes
 
 - Multi-word search across English CLDR names and keywords, shortcodes, categories, code points, tone descriptions, and reviewed conversational aliases
