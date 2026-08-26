@@ -4,7 +4,7 @@ Emoji Compass is a fast, meaning-first emoji finder and composer. Search for an 
 
 ### Release Version
 
-Release 1.0.3
+Release 1.1.0
 
 ## What it includes
 
