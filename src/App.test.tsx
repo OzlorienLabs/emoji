@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClipboardResult } from './lib/clipboard';
@@ -488,5 +488,78 @@ describe('Emoji Compass', () => {
 
     expect(screen.getByRole('button', { name: /polish message with ai/i })).toBeInTheDocument();
     resolvePrompt?.('late output');
+  });
+
+  it('does not add new emojis or icons to the message while polish process is running', async () => {
+    const user = userEvent.setup();
+    let resolvePrompt: ((val: string) => void) | undefined;
+    const prompt = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePrompt = resolve;
+        }),
+    );
+    const create = vi.fn().mockResolvedValue({ prompt, destroy: vi.fn() });
+    const mockLanguageModel = {
+      availability: vi.fn().mockResolvedValue('readily'),
+      create,
+    };
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        customLanguageModel={mockLanguageModel}
+      />,
+    );
+
+    // Initial message with blue heart
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
+    await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
+
+    // Start polish
+    const polishBtn = await screen.findByRole('button', { name: /polish message with ai/i });
+    await user.click(polishBtn);
+    expect(screen.getByText('Polishing with on-device AI…')).toBeInTheDocument();
+
+    // Try to add another emoji while polish is active
+    await user.click(screen.getByRole('button', { name: 'Add blue heart' }));
+
+    // Message must still only be 💙 while polishing
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
+
+    // Finish polish
+    resolvePrompt?.('💙 ✨ polished');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙 ✨ polished');
+    });
+
+    // After polish finishes, adding an emoji must work
+    await user.click(screen.getByRole('button', { name: 'Add blue heart' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙 ✨ polished💙');
+  });
+
+  it('fades and clears the "added to your message" notification after 5 seconds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+      await user.type(screen.getByRole('searchbox'), 'blue heart');
+      await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
+
+      expect(screen.getByRole('status', { name: 'Copy status' })).toHaveTextContent(
+        'blue heart added to your message',
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(screen.getByRole('status', { name: 'Copy status' })).toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

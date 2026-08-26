@@ -178,7 +178,7 @@ function EmojiExperience({
   const [detailsFamily, setDetailsFamily] = useState<EmojiFamily | null>(null);
   const [detailsIcon, setDetailsIcon] = useState<IconRecord | null>(null);
   const [hasPolished, setHasPolished] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<{ kind: 'success' | 'error'; message: string }>();
+  const [copyStatus, setCopyStatus] = useState<{ kind: 'success' | 'error'; message: string; key?: number }>();
   const searchRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const detailsTriggerRef = useRef<HTMLElement | null>(null);
@@ -186,18 +186,32 @@ function EmojiExperience({
   const preferenceController = useEmojiPreferences({ initial: initialPreferences, storage });
   const { preferences } = preferenceController;
 
+  const feedbackCounter = useRef(0);
+  const showFeedback = (status: { kind: 'success' | 'error'; message: string }) => {
+    feedbackCounter.current += 1;
+    setCopyStatus({ ...status, key: feedbackCounter.current });
+  };
+
+  useEffect(() => {
+    if (!copyStatus) return;
+    const timer = window.setTimeout(() => {
+      setCopyStatus(undefined);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [copyStatus]);
+
   const ai = useChromeAI({
     customLanguageModel,
     onSuccess: (polishedValue) => {
       setComposer((current) => commitComposerValue(current, polishedValue));
       setHasPolished(true);
-      setCopyStatus({
+      showFeedback({
         kind: 'success',
         message: 'Polished with on-device AI ✨',
       });
     },
     onError: (err) => {
-      setCopyStatus({
+      showFeedback({
         kind: 'error',
         message: err.message || 'AI polishing could not complete',
       });
@@ -348,10 +362,10 @@ function EmojiExperience({
     manualCleanup.current?.();
     if (result.status === 'copied') {
       manualCleanup.current = undefined;
-      setCopyStatus({ kind: 'success', message: successMessage });
+      showFeedback({ kind: 'success', message: successMessage });
     } else {
       manualCleanup.current = result.selection?.cleanup;
-      setCopyStatus({ kind: 'error', message: result.message });
+      showFeedback({ kind: 'error', message: result.message });
     }
   };
 
@@ -373,9 +387,14 @@ function EmojiExperience({
         return;
       }
 
+      if (ai.isPolishing) {
+        return;
+      }
+
+      setHasPolished(false);
       const edit = appendToComposer(composer.value, `:${item.kebabName}:`);
       setComposer((current) => commitComposerValue(current, edit.value));
-      setCopyStatus({ kind: 'success', message: `${item.name} added to your message` });
+      showFeedback({ kind: 'success', message: `${item.name} added to your message` });
       queueMicrotask(() => {
         const editor = composerRef.current;
         if (editor) {
@@ -392,9 +411,14 @@ function EmojiExperience({
         return;
       }
 
+      if (ai.isPolishing) {
+        return;
+      }
+
+      setHasPolished(false);
       const edit = appendToComposer(composer.value, item.glyph);
       setComposer((current) => commitComposerValue(current, edit.value));
-      setCopyStatus({ kind: 'success', message: `${item.name} added to your message` });
+      showFeedback({ kind: 'success', message: `${item.name} added to your message` });
       queueMicrotask(() => {
         const editor = composerRef.current;
         if (editor) {
@@ -601,9 +625,11 @@ function EmojiExperience({
 
       <div className="copy-feedback" aria-live="polite">
         {copyStatus?.kind === 'error' ? (
-          <p role="alert">{copyStatus.message}</p>
+          <p key={copyStatus.key} role="alert">{copyStatus.message}</p>
         ) : (
-          <p role="status" aria-label="Copy status">{copyStatus?.message ?? ''}</p>
+          <p key={copyStatus?.key ?? 'empty'} role="status" aria-label="Copy status">
+            {copyStatus?.message ?? ''}
+          </p>
         )}
       </div>
 
