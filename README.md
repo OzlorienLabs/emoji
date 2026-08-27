@@ -2,9 +2,11 @@
 
 Emoji Compass is a fast, meaning-first emoji and icon finder. Search for an idea such as `blue heart`, `happy dance`, or `work computer`, choose the exact emoji or skin-tone variant, build a message, and copy the original Unicode string. The app is a static React site with no account, ads, runtime API, or database — the only optional network integration is Google Analytics, and it stays inert unless you configure a measurement ID.
 
+# Web App - [🧭 Emoji Compas](https://emoji.ozlorienlabs.com)
+
 ### Release Version
 
-Release 1.3.0
+Release 1.3.1
 
 ## What it includes
 
