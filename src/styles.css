@@ -1871,28 +1871,28 @@ a:hover {
   clip-path: inset(50%);
 }
 
-/* -------------------------------------------------------- details sheet -- */
+/* ------------------------------------------------------- details dialog -- */
 
 .details-dialog {
   position: fixed;
+  inset: 0;
   z-index: 50;
   display: flex;
   overflow-y: auto;
-  width: min(100%, 720px);
-  max-width: 100%;
+  width: min(calc(100vw - 32px), 720px);
+  max-width: calc(100vw - 32px);
   max-height: min(88vh, 880px);
   flex-direction: column;
   padding: clamp(20px, 3vw, 30px);
   border: 1px solid var(--ec-line-2);
-  border-bottom: 0;
-  border-radius: 28px 28px 0 0;
-  margin: auto auto 0;
+  border-radius: 28px;
+  margin: auto;
   color: var(--ec-ink);
   background: rgb(var(--ec-card-rgb) / 96%);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   box-shadow:
-    0 -30px 80px -24px rgb(var(--ec-shadow-rgb) / 65%),
+    0 30px 80px -24px rgb(var(--ec-shadow-rgb) / 65%),
     inset 0 1px 0 var(--ec-line-2);
   gap: 0;
   animation: ec-panel 0.32s var(--ec-ease) both;
