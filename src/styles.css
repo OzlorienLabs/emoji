@@ -230,21 +230,24 @@
   box-sizing: border-box;
 }
 
+:root,
 html {
   min-width: 320px;
   min-height: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: 8.5rem;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   color: var(--ec-ink);
   background: var(--ec-bg);
   transition: background 0.45s ease;
+  -webkit-overflow-scrolling: touch;
 }
 
 button,
@@ -379,7 +382,7 @@ a:hover {
   color: var(--ec-ink);
   background: var(--ec-bg);
   font-family: var(--ec-font-sans);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .app-shell[data-size="small"] {
@@ -438,6 +441,8 @@ a:hover {
   opacity: var(--ec-aurora);
   pointer-events: none;
   transition: transform 0.6s var(--ec-ease);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .aurora__blob {
@@ -1256,6 +1261,8 @@ a:hover {
   overflow-x: auto;
   gap: 7px;
   padding: 2px 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   mask-image: linear-gradient(
     90deg,
     transparent,
@@ -1368,6 +1375,8 @@ a:hover {
 
 .emoji-tile {
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--ec-tile-min, 84px);
 }
 
 .emoji-tile__select {
@@ -1383,8 +1392,6 @@ a:hover {
   aspect-ratio: 1;
   color: var(--ec-ink);
   background: var(--ec-fill-1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   font-family: inherit;
   gap: 6px;
   transition:
@@ -2268,6 +2275,7 @@ a:hover {
 /* ------------------------------------------------------- reduced motion -- */
 
 @media (prefers-reduced-motion: reduce) {
+  :root,
   html {
     scroll-behavior: auto;
   }
