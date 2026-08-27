@@ -22,15 +22,15 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<ControlledSearch />);
 
-    const input = screen.getByRole('searchbox', { name: 'Search emojis' });
+    const input = screen.getByRole('searchbox', { name: 'Search emojis and icons' });
     expect(input).toHaveAttribute('aria-controls', 'emoji-results');
     expect(input).toHaveAttribute('maxlength', '120');
-    expect(screen.getByRole('status')).toHaveTextContent('12 emojis found');
+    expect(screen.getByRole('status')).toHaveTextContent('12 matches');
 
     await user.type(input, 'heart');
 
     expect(input).toHaveValue('heart');
-    expect(screen.getByRole('status')).toHaveTextContent('1 emoji found');
+    expect(screen.getByRole('status')).toHaveTextContent('1 match');
   });
 
   it('clears the query, restores focus, and supports a custom result message', async () => {
@@ -44,7 +44,7 @@ describe('SearchBar', () => {
       />,
     );
 
-    const input = screen.getByRole('searchbox', { name: 'Search emojis' });
+    const input = screen.getByRole('searchbox', { name: 'Search emojis and icons' });
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
 
     expect(onChange).toHaveBeenCalledWith('');

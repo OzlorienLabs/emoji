@@ -29,13 +29,13 @@ export interface StorageLike {
 
 export const PREFERENCES_STORAGE_KEY = 'emoji-compass:preferences';
 export const MAX_FAVORITES = 200;
-export const MAX_RECENTS = 24;
+export const MAX_RECENTS = 48;
 
 export const DEFAULT_PREFERENCES: Readonly<EmojiPreferences> = Object.freeze({
   size: 'medium',
   style: 'native',
   tone: 0,
-  theme: 'system',
+  theme: 'light',
   quickCopy: false,
   contentType: 'all',
   iconCopyFormat: 'svg',
@@ -93,7 +93,7 @@ export function sanitizePreferences(value: unknown): EmojiPreferences {
       tone === 0 || tone === 1 || tone === 2 || tone === 3 || tone === 4 || tone === 5
         ? tone
         : 0,
-    theme: theme === 'system' || theme === 'light' || theme === 'dark' ? theme : 'system',
+    theme: theme === 'system' || theme === 'light' || theme === 'dark' ? theme : 'light',
     quickCopy: typeof quickCopy === 'boolean' ? quickCopy : false,
     contentType:
       contentType === 'all' || contentType === 'emoji' || contentType === 'icon'

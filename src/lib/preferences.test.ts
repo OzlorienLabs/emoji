@@ -83,7 +83,7 @@ describe('sanitizePreferences', () => {
       ' smile ',
       'smile',
       null,
-      ...Array.from({ length: 30 }, (_, index) => `recent-${index}`),
+      ...Array.from({ length: 60 }, (_, index) => `recent-${index}`),
     ];
 
     const preferences = sanitizePreferences({ favoriteIds, recentIds });
@@ -94,7 +94,7 @@ describe('sanitizePreferences', () => {
       'favorite-0',
       'favorite-1',
     ]);
-    expect(preferences.recentIds).toHaveLength(24);
+    expect(preferences.recentIds).toHaveLength(48);
     expect(preferences.recentIds.slice(0, 3)).toEqual([
       'smile',
       'recent-0',

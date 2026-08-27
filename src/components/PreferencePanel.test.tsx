@@ -81,15 +81,63 @@ describe('PreferencePanel', () => {
     }
   });
 
-  it('provides accessible toolbar semantics and descriptive button titles', () => {
+  it('labels the popover and gives every control a descriptive title', () => {
     render(<PreferencePanel preferences={createDefaultPreferences()} onChange={() => undefined} />);
 
-    const toolbar = screen.getByRole('toolbar', { name: 'Display preferences' });
-    expect(toolbar).toBeInTheDocument();
+    expect(screen.getByTestId('preferences')).toHaveAttribute(
+      'aria-label',
+      'Display preferences',
+    );
 
     expect(screen.getByRole('button', { name: 'Default' })).toHaveAttribute('title', 'Skin tone: Default');
-    expect(screen.getByRole('button', { name: 'System theme' })).toHaveAttribute('title', 'Theme: System theme');
-    expect(screen.getByRole('button', { name: 'Medium' })).toHaveAttribute('title', 'Emoji size: Medium');
-    expect(screen.getByRole('button', { name: 'Native' })).toHaveAttribute('title', 'Appearance: Native');
+    expect(screen.getByRole('button', { name: 'System theme' })).toHaveAttribute('title', 'System theme');
+    expect(screen.getByRole('button', { name: 'Medium' })).toHaveAttribute('title', 'Tile size: Medium');
+    expect(screen.getByRole('button', { name: 'Native' })).toHaveAttribute('title', 'Presentation: Native');
+  });
+
+  it('exposes the quick-copy hint and the icon copy format for every option', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <PreferencePanel preferences={createDefaultPreferences()} onChange={onChange} />,
+    );
+
+    expect(screen.getByText('Tiles build a message you copy once')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy icons as SVG' }))
+      .toHaveAttribute('aria-pressed', 'true');
+
+    for (const [name, value] of [
+      ['Copy icons as JSX', 'jsx'],
+      ['Copy icons as HTML', 'html'],
+      ['Copy icons as name', 'name'],
+      ['Copy icons as SVG', 'svg'],
+    ] as const) {
+      await userEvent.click(screen.getByRole('button', { name }));
+      expect(onChange).toHaveBeenLastCalledWith({ iconCopyFormat: value });
+    }
+
+    rerender(
+      <PreferencePanel
+        preferences={{ ...createDefaultPreferences(), quickCopy: true }}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByText('Tiles copy straight to the clipboard')).toBeInTheDocument();
+  });
+
+  it('dismisses on an outside press but not on a press inside the popover', async () => {
+    const onDismiss = vi.fn();
+    render(
+      <PreferencePanel
+        preferences={createDefaultPreferences()}
+        onChange={vi.fn()}
+        onDismiss={onDismiss}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Medium' }));
+    expect(onDismiss).not.toHaveBeenCalled();
+
+    await userEvent.click(document.body);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });

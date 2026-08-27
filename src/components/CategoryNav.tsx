@@ -41,6 +41,10 @@ function CategoryButton({ active, icon, label, onClick }: CategoryButtonProps) {
   );
 }
 
+/**
+ * The horizontally scrolling chip rail. Tapping the active chip clears it, so
+ * the filter can always be undone without reaching for the "All" chip.
+ */
 export function CategoryNav({
   categories,
   activeCategory,
@@ -53,18 +57,22 @@ export function CategoryNav({
       <div className="category-nav__scroller">
         <CategoryButton
           active={activeCategory === null}
+          icon="✦"
           label={allLabel}
           onClick={() => onCategoryChange(null)}
         />
-        {categories.map((category) => (
-          <CategoryButton
-            key={`${typeof category.id}:${category.id}`}
-            active={activeCategory === category.id}
-            icon={category.icon}
-            label={category.label}
-            onClick={() => onCategoryChange(category.id)}
-          />
-        ))}
+        {categories.map((category) => {
+          const active = activeCategory === category.id;
+          return (
+            <CategoryButton
+              key={`${typeof category.id}:${category.id}`}
+              active={active}
+              icon={category.icon}
+              label={category.label}
+              onClick={() => onCategoryChange(active ? null : category.id)}
+            />
+          );
+        })}
       </div>
     </nav>
   );

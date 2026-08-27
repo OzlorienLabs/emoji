@@ -64,7 +64,7 @@ describe('IconDetailsDialog', () => {
     expect(createObjectURL).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:test');
 
-    await user.click(screen.getByRole('button', { name: '☆ Add to favorites' }));
+    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
     expect(onToggleFavorite).toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Close details' }));
@@ -91,7 +91,8 @@ describe('IconDetailsDialog', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '★ In favorites' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove from favorites' }))
+      .toHaveAttribute('aria-pressed', 'true');
     await user.click(screen.getByRole('button', { name: `View details for ${related.name}` }));
     expect(onViewRelated).toHaveBeenCalledWith(related);
   });
@@ -115,7 +116,8 @@ describe('IconDetailsDialog', () => {
       />,
     );
 
-    expect(screen.getByText('None')).toBeInTheDocument();
+    // With no tags there is no "Also known as" section to render.
+    expect(screen.queryByText('Also known as')).not.toBeInTheDocument();
 
     fireEvent(screen.getByRole('dialog'), new Event('cancel', {
       bubbles: true,
@@ -184,5 +186,65 @@ describe('IconDetailsDialog', () => {
 
     unmount();
     expect(dialog).not.toHaveAttribute('open');
+  });
+
+  it('adds the icon to the message, searches a tag, and closes on the backdrop', async () => {
+    const user = userEvent.setup();
+    const onAddToMessage = vi.fn();
+    const onSearchKeyword = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <IconDetailsDialog
+        icon={icon}
+        favorite={false}
+        relatedIcons={[]}
+        onAddToMessage={onAddToMessage}
+        onSearchKeyword={onSearchKeyword}
+        onCopySvg={vi.fn()}
+        onCopyJsx={vi.fn()}
+        onCopyName={vi.fn()}
+        onCopyHtml={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        onViewRelated={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add to message' }));
+    expect(onAddToMessage).toHaveBeenCalledWith(icon);
+
+    await user.click(screen.getByRole('button', { name: `Search for ${icon.tags[0]}` }));
+    expect(onSearchKeyword).toHaveBeenCalledWith(icon.tags[0]);
+
+    fireEvent.click(screen.getByRole('dialog'));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('re-renders the preview at the chosen stroke width and size', async () => {
+    const user = userEvent.setup();
+    const onCopySvg = vi.fn();
+    render(
+      <IconDetailsDialog
+        icon={icon}
+        favorite={false}
+        relatedIcons={[]}
+        onCopySvg={onCopySvg}
+        onCopyJsx={vi.fn()}
+        onCopyName={vi.fn()}
+        onCopyHtml={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        onViewRelated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '1.5px' }));
+    await user.click(screen.getByRole('button', { name: '64px' }));
+
+    expect(screen.getByRole('button', { name: '1.5px' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '64px' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Copy SVG' }));
+    expect(onCopySvg).toHaveBeenCalledWith(expect.stringContaining('stroke-width="1.5"'));
   });
 });

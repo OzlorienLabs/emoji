@@ -142,4 +142,86 @@ describe('EmojiDetailsDialog', () => {
     unmount();
     expect(dialog).not.toHaveAttribute('open');
   });
+
+  it('offers the message and copy actions and searches a keyword', async () => {
+    const onChoose = vi.fn();
+    const onCopyGlyph = vi.fn();
+    const onCopyShortcode = vi.fn();
+    const onSearchKeyword = vi.fn();
+    render(
+      <EmojiDetailsDialog
+        family={family}
+        groupLabel="People & body"
+        subgroupLabel="Person role"
+        favorite={false}
+        relatedFamilies={[]}
+        displayVariant={family.variants[0]}
+        onChoose={onChoose}
+        onViewRelated={() => undefined}
+        onToggleFavorite={() => undefined}
+        onClose={() => undefined}
+        onCopyGlyph={onCopyGlyph}
+        onCopyShortcode={onCopyShortcode}
+        onSearchKeyword={onSearchKeyword}
+      />,
+    );
+
+    // The head tile and the message action follow the resolved tone.
+    expect(screen.getByText(`All ${family.variants.length + 1} variants`)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to message' }));
+    expect(onChoose).toHaveBeenCalledWith(family.variants[0]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy emoji' }));
+    expect(onCopyGlyph).toHaveBeenCalledWith(family.variants[0]!.glyph);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy shortcode' }));
+    expect(onCopyShortcode).toHaveBeenCalledWith(`:${family.shortcodes[0]}:`);
+
+    await userEvent.click(screen.getByRole('button', { name: `Search for ${family.keywords[0]}` }));
+    expect(onSearchKeyword).toHaveBeenCalledWith(family.keywords[0]);
+  });
+
+  it('omits the shortcode action and keyword list when the family has neither', () => {
+    render(
+      <EmojiDetailsDialog
+        family={{ ...family, shortcodes: [], keywords: [] }}
+        groupLabel="People & body"
+        subgroupLabel="Person role"
+        favorite={false}
+        relatedFamilies={[]}
+        onChoose={() => undefined}
+        onViewRelated={() => undefined}
+        onToggleFavorite={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Copy shortcode' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Also known as')).not.toBeInTheDocument();
+    // Copy actions with no handler wired must still be safe to press.
+    expect(() => screen.getByRole('button', { name: 'Copy emoji' }).click()).not.toThrow();
+  });
+
+  it('closes when the backdrop outside the sheet is clicked', async () => {
+    const onClose = vi.fn();
+    render(
+      <EmojiDetailsDialog
+        family={family}
+        groupLabel="People & body"
+        subgroupLabel="Person role"
+        favorite={false}
+        relatedFamilies={[]}
+        onChoose={() => undefined}
+        onViewRelated={() => undefined}
+        onToggleFavorite={() => undefined}
+        onClose={onClose}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('heading', { level: 2 }));
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('dialog'));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });

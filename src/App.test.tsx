@@ -18,10 +18,10 @@ describe('Emoji Compass', () => {
     const copy = vi.fn().mockResolvedValue(copied());
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Find the emoji or icon you mean' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Find the exact emoji you mean' }))
       .toBeInTheDocument();
     expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent(
-      '15 complete sequences & vector icons (9 emojis + 6 vector icons)',
+      '9Emoji sequences6Vector icons0Bytes sent to a server',
     );
 
     await user.type(screen.getByRole('searchbox'), 'blue heart');
@@ -113,7 +113,7 @@ describe('Emoji Compass', () => {
     await user.click(screen.getByRole('button', { name: 'Arrows & Navigation' }));
     expect(screen.getByRole('heading', { level: 2, name: 'Arrows & Navigation' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /Emojis/ }));
+    await user.click(screen.getByRole('tab', { name: /Emoji \(/ }));
     expect(screen.getByRole('button', { name: 'Smileys & emotion' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add grinning face' })).toBeVisible();
 
@@ -145,7 +145,7 @@ describe('Emoji Compass', () => {
     await user.click(screen.getByRole('button', { name: /View details for arrow left/i }));
     expect(screen.getByRole('heading', { level: 2, name: 'arrow left' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '☆ Add to favorites' }));
+    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
     await user.click(screen.getByRole('button', { name: 'Close details' }));
 
     await user.click(screen.getByRole('button', { name: 'Favorites' }));
@@ -156,10 +156,13 @@ describe('Emoji Compass', () => {
     const user = userEvent.setup();
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
+    await user.click(screen.getByRole('button', { name: 'Open preferences' }));
     await user.click(screen.getByRole('button', { name: 'Large' }));
     await user.click(screen.getByRole('button', { name: 'Text' }));
     await user.click(screen.getByRole('button', { name: 'Dark skin tone' }));
     await user.click(screen.getByRole('button', { name: 'Dark theme' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('preferences')).not.toBeInTheDocument();
 
     const app = screen.getByTestId('emoji-app');
     expect(app).toHaveAttribute('data-size', 'large');
@@ -256,7 +259,9 @@ describe('Emoji Compass', () => {
     const copy = vi.fn().mockResolvedValue(copied());
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
+    await user.click(screen.getByRole('button', { name: 'Open preferences' }));
     await user.click(screen.getByRole('button', { name: /copy a single emoji/i }));
+    await user.click(screen.getByRole('button', { name: 'Open preferences' }));
     await user.click(screen.getByRole('button', { name: 'Copy grinning face' }));
 
     expect(copy).toHaveBeenCalledWith('😀');
@@ -286,7 +291,7 @@ describe('Emoji Compass', () => {
     const search = screen.getByRole('searchbox');
     await user.type(search, 'zzzz');
     expect(await screen.findByText('Nothing matched “zzzz”')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Try celebration' }));
+    await user.click(screen.getAllByRole('button', { name: 'Try celebration' })[0]!);
     expect(search).toHaveValue('celebration');
 
     await user.click(await screen.findByRole('button', { name: 'Add party popper' }));
@@ -309,9 +314,11 @@ describe('Emoji Compass', () => {
     });
 
     render(<App fetcher={fetcher as unknown as typeof fetch} />);
-    expect(screen.getByText('Loading every emoji and icon…')).toBeInTheDocument();
+    expect(
+      screen.getByText('Loading 3,953 emoji sequences and 1,777 vector icons…'),
+    ).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'Try loading again' }));
-    expect(await screen.findByRole('heading', { name: 'Find the emoji or icon you mean' }))
+    expect(await screen.findByRole('heading', { name: 'Find the exact emoji you mean' }))
       .toBeInTheDocument();
   });
 
@@ -540,7 +547,7 @@ describe('Emoji Compass', () => {
     expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙 ✨ polished💙');
   });
 
-  it('fades and clears the "added to your message" notification after 5 seconds', async () => {
+  it('fades and clears the "added to your message" notification after 2.6 seconds', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -554,12 +561,223 @@ describe('Emoji Compass', () => {
       );
 
       act(() => {
-        vi.advanceTimersByTime(5000);
+        vi.advanceTimersByTime(2600);
       });
 
       expect(screen.getByRole('status', { name: 'Copy status' })).toBeEmptyDOMElement();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('toggles the theme from the header and remembers the explicit choice', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    const app = screen.getByTestId('emoji-app');
+    expect(app).toHaveAttribute('data-theme', 'light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+
+    await user.click(screen.getByRole('button', { name: 'Switch to night' }));
+    expect(app).toHaveAttribute('data-theme', 'dark');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+
+    await user.click(screen.getByRole('button', { name: 'Switch to daylight' }));
+    expect(app).toHaveAttribute('data-theme', 'light');
+  });
+
+  it('copies with the keyboard and refuses an empty message', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
+
+    await user.keyboard('{Meta>}{Enter}{/Meta}');
+    expect(copy).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Add something to your message first',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add grinning face' }));
+    await user.keyboard('{Control>}{Enter}{/Control}');
+    expect(copy).toHaveBeenCalledWith('😀');
+  });
+
+  it('runs a keyword from the details sheet as a new search', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    await user.click(screen.getByRole('button', { name: 'Details for grinning face' }));
+    await user.click(screen.getByRole('button', { name: 'Search for happy' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toHaveValue('happy');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Matches for “happy”' }))
+      .toBeInTheDocument();
+  });
+
+  it('adds an emoji and an icon to the message straight from their details sheets', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
+
+    await user.click(screen.getByRole('button', { name: 'Details for grinning face' }));
+    await user.click(screen.getByRole('button', { name: 'Copy emoji' }));
+    expect(copy).toHaveBeenCalledWith('😀');
+
+    await user.click(screen.getByRole('button', { name: 'Copy shortcode' }));
+    expect(copy).toHaveBeenCalledWith(':grinning:');
+
+    await user.click(screen.getByRole('button', { name: 'Add to message' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('😀');
+
+    await user.click(screen.getByRole('button', { name: 'Details for arrow right' }));
+    await user.click(screen.getByRole('button', { name: 'Add to message' }));
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('😀:arrow-right:');
+  });
+
+  it('unwinds one overlay at a time with Escape, clearing the query last', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'grinning');
+
+    // The details sheet outranks everything else.
+    await user.click(await screen.findByRole('button', { name: 'Details for grinning face' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(search).toHaveValue('grinning');
+
+    // Then the preferences popover.
+    await user.click(screen.getByRole('button', { name: 'Open preferences' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('preferences')).not.toBeInTheDocument();
+    expect(search).toHaveValue('grinning');
+
+    // Only once nothing is layered does Escape clear the query.
+    await user.keyboard('{Escape}');
+    expect(search).toHaveValue('');
+  });
+
+  it('dismisses the preferences popover on a press outside it', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    await user.click(screen.getByRole('button', { name: 'Open preferences' }));
+    await user.click(screen.getByRole('button', { name: 'Medium' }));
+    expect(screen.getByTestId('preferences')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.queryByTestId('preferences')).not.toBeInTheDocument();
+  });
+
+  it('drops all motion when the operating system asks for reduced motion', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+      matches: query.includes('reduced-motion'),
+      addEventListener() {},
+      removeEventListener() {},
+    })));
+
+    try {
+      const user = userEvent.setup();
+      render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+      // The aurora never tracks the pointer under reduced motion.
+      const pointerMove = new Event('pointermove') as Event & { clientX: number; clientY: number };
+      Object.assign(pointerMove, { clientX: 100, clientY: 100 });
+      window.dispatchEvent(pointerMove);
+      expect(screen.getByTestId('aurora').style.transform).toBe('');
+
+      // Counters land on their totals immediately rather than rolling up.
+      expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent('9Emoji sequences');
+
+      await user.click(screen.getByRole('button', { name: 'Add grinning face' }));
+      expect(document.querySelector('.fly-ghost')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('runs a hero idea chip and keeps Escape harmless with nothing open', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    // Escape with no overlay and no query must not throw or change anything.
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+
+    await user.click(screen.getByRole('button', { name: 'Search for celebration' }));
+    expect(screen.getByRole('searchbox')).toHaveValue('celebration');
+    expect(await screen.findByRole('button', { name: 'Add party popper' })).toBeVisible();
+  });
+
+  it('follows a dark operating system when the theme preference is system', () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+      matches: query.includes('prefers-color-scheme: dark'),
+      addEventListener() {},
+      removeEventListener() {},
+    })));
+
+    try {
+      render(
+        <App
+          initialCatalog={catalogFixture}
+          initialIconCatalog={iconCatalogFixture}
+          initialPreferences={{ ...createDefaultPreferences(), theme: 'system' }}
+        />,
+      );
+
+      expect(screen.getByTestId('emoji-app')).toHaveAttribute('data-theme', 'system');
+      // Resolved as night, so the toggle offers daylight.
+      expect(screen.getByRole('button', { name: 'Switch to daylight' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('jumps to search with the slash key while reduced motion is on', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+      matches: query.includes('reduced-motion'),
+      addEventListener() {},
+      removeEventListener() {},
+    })));
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+
+    try {
+      const user = userEvent.setup();
+      render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+      await user.keyboard('/');
+      expect(screen.getByRole('searchbox')).toHaveFocus();
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('falls back to a generic message when the AI reports no reason', async () => {
+    const user = userEvent.setup();
+    const create = vi.fn().mockRejectedValue(new Error(''));
+    const mockLanguageModel = {
+      availability: vi.fn().mockResolvedValue('readily'),
+      create,
+    };
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        customLanguageModel={mockLanguageModel}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add grinning face' }));
+    await user.click(await screen.findByRole('button', { name: /polish message with ai/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'AI polishing could not complete',
+    );
   });
 });

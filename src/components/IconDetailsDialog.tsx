@@ -7,25 +7,32 @@ export interface IconDetailsDialogProps {
   icon: IconRecord;
   favorite: boolean;
   relatedIcons: readonly IconRecord[];
+  onAddToMessage?: (icon: IconRecord) => void;
   onCopySvg: (svg: string) => void;
   onCopyJsx: (jsx: string) => void;
   onCopyName: (name: string) => void;
   onCopyHtml: (html: string) => void;
   onToggleFavorite: () => void;
   onViewRelated: (icon: IconRecord) => void;
+  onSearchKeyword?: (keyword: string) => void;
   onClose: () => void;
 }
+
+const STROKE_WIDTHS = [1.5, 2, 2.5];
+const PREVIEW_SIZES = [24, 36, 48, 64];
 
 export function IconDetailsDialog({
   icon,
   favorite,
   relatedIcons,
+  onAddToMessage,
   onCopySvg,
   onCopyJsx,
   onCopyName,
   onCopyHtml,
   onToggleFavorite,
   onViewRelated,
+  onSearchKeyword,
   onClose,
 }: IconDetailsDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -59,6 +66,10 @@ export function IconDetailsDialog({
     URL.revokeObjectURL(url);
   };
 
+  const meta = `${icon.kebabName} · Lucide 1.34 · ${icon.tags.length} ${
+    icon.tags.length === 1 ? 'tag' : 'tags'
+  }`;
+
   return (
     <dialog
       ref={dialogRef}
@@ -68,34 +79,49 @@ export function IconDetailsDialog({
         event.preventDefault();
         onClose();
       }}
+      onClick={(event) => {
+        if (event.target === dialogRef.current) onClose();
+      }}
     >
       <div className="details-heading">
         <div className="details-heading__info">
           <div className="details-glyph details-glyph--icon" aria-hidden="true">
             <IconSvg nodes={icon.nodes} size={previewSize} strokeWidth={strokeWidth} />
           </div>
-          <div>
+          <div className="details-heading__copy">
             <span className="section-kicker">Vector icon · {icon.categoryLabel}</span>
             <h2 id="icon-details-title">{icon.name}</h2>
+            <span className="details-meta-line">{meta}</span>
             <code className="icon-component-name">&lt;{icon.pascalName} /&gt;</code>
           </div>
         </div>
-        <button
-          ref={closeRef}
-          type="button"
-          className="icon-button"
-          aria-label="Close details"
-          onClick={onClose}
-        >
-          ×
-        </button>
+        <div className="details-heading__actions">
+          <button
+            type="button"
+            className="icon-button favorite-button"
+            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={favorite}
+            onClick={onToggleFavorite}
+          >
+            <span aria-hidden="true">{favorite ? '★' : '☆'}</span>
+          </button>
+          <button
+            ref={closeRef}
+            type="button"
+            className="icon-button"
+            aria-label="Close details"
+            onClick={onClose}
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
       </div>
 
       <div className="icon-preview-controls" aria-label="Icon preview controls">
         <div className="icon-preview-control-group">
-          <span className="control-label">Stroke width:</span>
+          <span className="control-label">Stroke width</span>
           <div className="segmented-control__group">
-            {[1.5, 2, 2.5].map((width) => (
+            {STROKE_WIDTHS.map((width) => (
               <button
                 type="button"
                 key={width}
@@ -109,9 +135,9 @@ export function IconDetailsDialog({
         </div>
 
         <div className="icon-preview-control-group">
-          <span className="control-label">Preview size:</span>
+          <span className="control-label">Preview size</span>
           <div className="segmented-control__group">
-            {[24, 36, 48, 64].map((size) => (
+            {PREVIEW_SIZES.map((size) => (
               <button
                 type="button"
                 key={size}
@@ -125,87 +151,86 @@ export function IconDetailsDialog({
         </div>
       </div>
 
-      <div className="icon-copy-actions" aria-label="Copy icon formats">
+      {icon.tags.length > 0 ? (
+        <section className="details-section" aria-labelledby="icon-tags-title">
+          <span className="details-section__label" id="icon-tags-title">Also known as</span>
+          <div className="keyword-pills">
+            {icon.tags.map((tag) => (
+              <button
+                type="button"
+                key={tag}
+                className="keyword-pill"
+                aria-label={`Search for ${tag}`}
+                onClick={() => onSearchKeyword?.(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="details-actions" aria-label="Copy icon formats">
         <button
           type="button"
           className="button button-primary"
+          onClick={() => onAddToMessage?.(icon)}
+        >
+          Add to message
+        </button>
+        <button
+          type="button"
+          className="button"
           onClick={() => onCopySvg(getIconSvg(icon, { size: 24, strokeWidth }))}
         >
           Copy SVG
         </button>
         <button
           type="button"
-          className="button button-subtle"
+          className="button"
           onClick={() => onCopyJsx(getIconJsx(icon, { size: 24, strokeWidth }))}
         >
           Copy React / JSX
         </button>
         <button
           type="button"
-          className="button button-subtle"
+          className="button"
           onClick={() => onCopyName(icon.kebabName)}
         >
           Copy Name
         </button>
         <button
           type="button"
-          className="button button-subtle"
+          className="button"
           onClick={() => onCopyHtml(getIconHtml(icon))}
         >
           Copy HTML
         </button>
-        <button
-          type="button"
-          className="button button-subtle"
-          onClick={downloadSvgFile}
-        >
+        <button type="button" className="button" onClick={downloadSvgFile}>
           Download SVG
-        </button>
-        <button
-          type="button"
-          className="button button-subtle"
-          onClick={onToggleFavorite}
-        >
-          {favorite ? '★ In favorites' : '☆ Add to favorites'}
         </button>
       </div>
 
-      <dl className="details-meta">
-        <div>
-          <dt>Name</dt>
-          <dd>{icon.kebabName}</dd>
-        </div>
-        <div>
-          <dt>Category</dt>
-          <dd>{icon.categoryLabel}</dd>
-        </div>
-        <div>
-          <dt>Tags</dt>
-          <dd>{icon.tags.length > 0 ? icon.tags.join(', ') : 'None'}</dd>
-        </div>
-        <div>
-          <dt>License</dt>
-          <dd>ISC · Lucide</dd>
-        </div>
-      </dl>
-
       {relatedIcons.length > 0 ? (
-        <section className="related-section" aria-labelledby="related-icons-title">
-          <div className="section-kicker" id="related-icons-title">
-            Related icons in {icon.categoryLabel}
-          </div>
+        <section
+          className="details-section details-section--divided"
+          aria-labelledby="related-icons-title"
+        >
+          <span className="details-section__label" id="related-icons-title">
+            Related in {icon.categoryLabel}
+          </span>
           <div className="related-grid related-grid--icons">
             {relatedIcons.map((related) => (
               <button
                 type="button"
                 key={related.id}
+                title={related.name}
                 aria-label={`View details for ${related.name}`}
                 onClick={() => onViewRelated(related)}
               >
                 <span className="related-icon-glyph" aria-hidden="true">
-                  <IconSvg nodes={related.nodes} size={24} strokeWidth={2} />
+                  <IconSvg nodes={related.nodes} size={24} strokeWidth={1.7} />
                 </span>
-                <small>{related.name}</small>
               </button>
             ))}
           </div>

@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import type {
   EmojiFamily,
   EmojiSize,
@@ -28,7 +35,7 @@ export type GridSelectableItem = EmojiVariant | IconRecord;
 
 export interface EmojiGridProps {
   items: readonly EmojiGridItem[];
-  onSelect: (item: GridSelectableItem, source: EmojiGridItem) => void;
+  onSelect: (item: GridSelectableItem, source: EmojiGridItem, tile: HTMLElement) => void;
   onDetails: (source: EmojiGridItem, item: GridSelectableItem) => void;
   style?: EmojiStyle;
   size?: EmojiSize;
@@ -40,6 +47,12 @@ export interface EmojiGridProps {
   ariaLabel?: string;
   emptyTitle?: string;
   emptyMessage?: string;
+  /** Exposes the list element so the app can stagger its entrance. */
+  gridRef?: RefObject<HTMLUListElement | null>;
+  /** Hover tooltip for a tile — the design shows "{name} · {category}". */
+  titleFor?: (source: EmojiGridItem, display: GridSelectableItem) => string;
+  /** Rendered inside the empty state, under the message. */
+  emptyAction?: ReactNode;
 }
 
 interface GridState {
@@ -69,9 +82,9 @@ function displayedItem(item: EmojiGridItem, tone: ToneSelection): GridSelectable
 }
 
 const ICON_PIXEL_SIZES: Record<EmojiSize, number> = {
-  small: 20,
-  medium: 28,
-  large: 36,
+  small: 22,
+  medium: 30,
+  large: 42,
 };
 
 export function EmojiGrid({
@@ -88,6 +101,9 @@ export function EmojiGrid({
   ariaLabel = 'Catalog results',
   emptyTitle = 'No items found',
   emptyMessage = 'Try another word, feeling, or idea.',
+  gridRef: externalGridRef,
+  titleFor,
+  emptyAction,
 }: EmojiGridProps) {
   const pageSize = pageSizeWithinLimit(initialPageSize);
   const [gridState, setGridState] = useState<GridState>(() => ({
@@ -97,7 +113,8 @@ export function EmojiGrid({
     focusedIndex: 0,
     offset: 0,
   }));
-  const gridRef = useRef<HTMLUListElement | null>(null);
+  const internalGridRef = useRef<HTMLUListElement | null>(null);
+  const gridRef = externalGridRef ?? internalGridRef;
   const revealSentinelRef = useRef<HTMLDivElement | null>(null);
   let currentState = gridState;
 
@@ -147,7 +164,7 @@ export function EmojiGrid({
           ? { ...current, visibleCount: current.visibleCount + count }
           : current;
       });
-    }, { rootMargin: '320px 0px' });
+    }, { rootMargin: '600px 0px' });
 
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -156,8 +173,10 @@ export function EmojiGrid({
   if (items.length === 0) {
     return (
       <div className="emoji-grid__empty" role="status">
+        <span className="emoji-grid__empty-mark" aria-hidden="true">🧭</span>
         <h2>{emptyTitle}</h2>
         <p>{emptyMessage}</p>
+        {emptyAction}
       </div>
     );
   }
@@ -195,7 +214,7 @@ export function EmojiGrid({
     buttons?.[targetIndex]?.focus();
   };
 
-  const iconPx = ICON_PIXEL_SIZES[size] ?? 28;
+  const iconPx = ICON_PIXEL_SIZES[size] ?? 30;
 
   return (
     <section className="emoji-grid" aria-label={ariaLabel} data-size={size}>
@@ -204,14 +223,20 @@ export function EmojiGrid({
           const display = displayedItem(item, tone);
           const isIcon = isIconItem(item);
           return (
-            <li key={item.id} className="emoji-tile" data-testid="emoji-tile" data-kind={isIcon ? 'icon' : 'emoji'}>
+            <li
+              key={item.id}
+              className="emoji-tile"
+              data-testid="emoji-tile"
+              data-kind={isIcon ? 'icon' : 'emoji'}
+            >
               <button
                 className="emoji-tile__select"
                 type="button"
                 aria-label={`${actionLabel} ${display.name}`}
+                title={titleFor?.(item, display) ?? display.name}
                 data-emoji-action="select"
                 tabIndex={index === currentState.focusedIndex ? 0 : -1}
-                onClick={() => onSelect(display, item)}
+                onClick={(event) => onSelect(display, item, event.currentTarget)}
                 onFocus={() =>
                   setGridState((current) => ({ ...current, focusedIndex: index }))
                 }
@@ -219,7 +244,7 @@ export function EmojiGrid({
               >
                 <span className="emoji-tile__glyph" aria-hidden="true">
                   {isIcon ? (
-                    <IconSvg nodes={(item as IconRecord).nodes} size={iconPx} strokeWidth={2} />
+                    <IconSvg nodes={(item as IconRecord).nodes} size={iconPx} strokeWidth={1.7} />
                   ) : (
                     getDisplayGlyph(display as EmojiVariant, style)
                   )}
@@ -234,9 +259,12 @@ export function EmojiGrid({
                 onFocus={() =>
                   setGridState((current) => ({ ...current, focusedIndex: index }))
                 }
-                onClick={() => onDetails(item, display)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDetails(item, display);
+                }}
               >
-                Details
+                <span aria-hidden="true">i</span>
               </button>
             </li>
           );

@@ -83,7 +83,11 @@ describe('EmojiGrid', () => {
     await user.click(
       screen.getByRole('button', { name: 'Select waving hand: dark skin tone' }),
     );
-    expect(onSelect).toHaveBeenCalledWith(wavingHand.variants[0], wavingHand);
+    expect(onSelect).toHaveBeenCalledWith(
+      wavingHand.variants[0],
+      wavingHand,
+      expect.any(HTMLElement),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Details for red heart' }));
     expect(onDetails).toHaveBeenCalledWith(heart, heart);
@@ -353,5 +357,30 @@ describe('EmojiGrid', () => {
       'Nothing matchesTry a broader feeling.',
     );
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
+
+  it('renders the hover title and an empty-state action slot', () => {
+    const { rerender } = render(
+      <EmojiGrid
+        items={[heart]}
+        titleFor={(_source, display) => `${display.name} · Smileys & Emotion`}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Select red heart' })).toHaveAttribute(
+      'title',
+      'red heart · Smileys & Emotion',
+    );
+
+    rerender(
+      <EmojiGrid
+        items={[]}
+        emptyAction={<button type="button">Try celebration</button>}
+        onSelect={vi.fn()}
+        onDetails={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Try celebration' })).toBeVisible();
   });
 });

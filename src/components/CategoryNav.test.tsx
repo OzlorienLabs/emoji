@@ -69,4 +69,33 @@ describe('CategoryNav', () => {
       'page',
     );
   });
+
+  it('clears the filter when the active chip is tapped again', async () => {
+    const user = userEvent.setup();
+    const onCategoryChange = vi.fn();
+    render(
+      <CategoryNav
+        categories={categories}
+        activeCategory={0}
+        onCategoryChange={onCategoryChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Smileys & Emotion' }));
+    expect(onCategoryChange).toHaveBeenCalledWith(null);
+  });
+
+  it('renders a chip without an icon', () => {
+    render(
+      <CategoryNav
+        categories={[{ id: 'plain', label: 'Uncategorised' }]}
+        activeCategory={null}
+        onCategoryChange={vi.fn()}
+      />,
+    );
+
+    const chip = screen.getByRole('button', { name: 'Uncategorised' });
+    expect(chip).toHaveTextContent('Uncategorised');
+    expect(chip.querySelector('.category-nav__icon')).toBeNull();
+  });
 });

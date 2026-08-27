@@ -1,9 +1,4 @@
-import {
-  useId,
-  type FormEvent,
-  type MouseEvent,
-  type RefObject,
-} from 'react';
+import { useId, type FormEvent, type MouseEvent, type RefObject } from 'react';
 
 export interface SearchBarProps {
   value: string;
@@ -15,27 +10,33 @@ export interface SearchBarProps {
   statusMessage?: string;
   resultsId?: string;
   inputRef?: RefObject<HTMLInputElement | null>;
+  /** Suppresses the count chip while the catalog is still resolving. */
+  loading?: boolean;
 }
 
-function resultCountMessage(resultCount: number | undefined): string {
+function formatMatchCount(resultCount: number | undefined): string {
   if (resultCount === undefined) return '';
-  return `${resultCount} ${resultCount === 1 ? 'emoji' : 'emojis'} found`;
+  return `${resultCount.toLocaleString('en-US')} ${
+    resultCount === 1 ? 'match' : 'matches'
+  }`;
 }
 
 export function SearchBar({
   value,
   onChange,
   onSubmit,
-  label = 'Search emojis',
-  placeholder = 'Search by feeling, object, or idea',
+  label = 'Search emojis and icons',
+  placeholder = 'try “blue heart”, “deadline”, “download icon”…',
   resultCount,
   statusMessage,
   resultsId,
   inputRef,
+  loading = false,
 }: SearchBarProps) {
   const generatedId = useId();
   const inputId = `emoji-search-${generatedId}`;
   const statusId = `emoji-search-status-${generatedId}`;
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit?.();
@@ -49,15 +50,15 @@ export function SearchBar({
     (inputRef?.current ?? formInput)?.focus();
   };
 
+  const countText = loading ? 'loading…' : formatMatchCount(resultCount);
+
   return (
     <form className="search-bar" role="search" onSubmit={handleSubmit}>
       <label className="search-bar__label" htmlFor={inputId}>
         {label}
       </label>
       <div className="search-bar__field">
-        <span className="search-bar__icon" aria-hidden="true">
-          ⌕
-        </span>
+        <span className="search-bar__icon" aria-hidden="true">🔍</span>
         <input
           ref={inputRef}
           id={inputId}
@@ -79,19 +80,22 @@ export function SearchBar({
             aria-label="Clear search"
             onClick={handleClear}
           >
-            Clear
+            <span aria-hidden="true">✕</span>
           </button>
+        ) : null}
+        {countText ? (
+          <span className="search-bar__count" aria-hidden="true">{countText}</span>
         ) : null}
       </div>
       <output
         id={statusId}
-        className="search-bar__status"
+        className="copy-feedback"
         role="status"
         aria-live="polite"
         aria-atomic="true"
         htmlFor={inputId}
       >
-        {statusMessage ?? resultCountMessage(resultCount)}
+        {statusMessage ?? countText}
       </output>
     </form>
   );

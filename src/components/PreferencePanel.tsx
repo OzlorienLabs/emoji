@@ -1,9 +1,12 @@
+import { useEffect, useRef } from 'react';
 import type { EmojiPreferences } from '../lib/preferences';
 import { TONE_OPTIONS } from '../lib/variants';
 
-interface PreferencePanelProps {
+export interface PreferencePanelProps {
   preferences: EmojiPreferences;
   onChange: (patch: Partial<EmojiPreferences>) => void;
+  /** Dismisses the popover on an outside click. */
+  onDismiss?: () => void;
 }
 
 const SIZE_OPTIONS = [
@@ -13,37 +16,75 @@ const SIZE_OPTIONS = [
 ] as const;
 
 const STYLE_OPTIONS = [
-  { value: 'native', label: 'Native', icon: '🎨' },
-  { value: 'text', label: 'Text', icon: '🔤' },
+  { value: 'native', label: 'Native', display: 'Native' },
+  { value: 'text', label: 'Text', display: 'Text' },
 ] as const;
-
-const TONE_ICONS: Readonly<Record<number, string>> = {
-  0: '✋',
-  1: '✋🏻',
-  2: '✋🏼',
-  3: '✋🏽',
-  4: '✋🏾',
-  5: '✋🏿',
-};
 
 const THEME_OPTIONS = [
-  { value: 'system', label: 'System theme', icon: '💻' },
-  { value: 'light', label: 'Light theme', icon: '☀️' },
-  { value: 'dark', label: 'Dark theme', icon: '🌙' },
+  { value: 'light', label: 'Light theme', display: 'Day' },
+  { value: 'dark', label: 'Dark theme', display: 'Night' },
+  { value: 'system', label: 'System theme', display: 'Auto' },
 ] as const;
 
-export function PreferencePanel({ preferences, onChange }: PreferencePanelProps) {
+const ICON_FORMAT_OPTIONS = [
+  { value: 'svg', label: 'Copy icons as SVG', display: 'SVG' },
+  { value: 'jsx', label: 'Copy icons as JSX', display: 'JSX' },
+  { value: 'html', label: 'Copy icons as HTML', display: 'HTML' },
+  { value: 'name', label: 'Copy icons as name', display: 'Name' },
+] as const;
+
+const TONE_GLYPHS: Readonly<Record<number, string>> = {
+  0: '✋',
+  1: '🏻',
+  2: '🏼',
+  3: '🏽',
+  4: '🏾',
+  5: '🏿',
+};
+
+/**
+ * The preferences popover. It is anchored to the header gear and dismisses on
+ * an outside pointer press; `Escape` is handled by the app so it can close the
+ * details sheet first.
+ */
+export function PreferencePanel({
+  preferences,
+  onChange,
+  onDismiss,
+}: PreferencePanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!onDismiss || typeof document === 'undefined') return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && panelRef.current?.contains(target)) return;
+      // The gear itself toggles, so a press on it must not double-fire.
+      if (target instanceof Element && target.closest('[aria-label="Open preferences"]')) {
+        return;
+      }
+      onDismiss();
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [onDismiss]);
+
   return (
-    <div className="preference-panel" role="toolbar" aria-label="Display preferences">
-      <fieldset className="segmented-control preference-group" aria-label="Emoji size">
-        <legend className="sr-only">Emoji size</legend>
-        <div className="segmented-control__group">
+    <div
+      className="prefs-popover"
+      ref={panelRef}
+      aria-label="Display preferences"
+      data-testid="preferences"
+    >
+      <fieldset className="prefs-group">
+        <legend className="prefs-label">Tile size</legend>
+        <div className="prefs-track">
           {SIZE_OPTIONS.map(({ value, label, display }) => (
             <button
               type="button"
               key={value}
               aria-label={label}
-              title={`Emoji size: ${label}`}
+              title={`Tile size: ${label}`}
               aria-pressed={preferences.size === value}
               onClick={() => onChange({ size: value })}
             >
@@ -53,55 +94,56 @@ export function PreferencePanel({ preferences, onChange }: PreferencePanelProps)
         </div>
       </fieldset>
 
-      <fieldset className="segmented-control preference-group" aria-label="Emoji appearance">
-        <legend className="sr-only">Emoji appearance</legend>
-        <div className="segmented-control__group">
-          {STYLE_OPTIONS.map(({ value, label, icon }) => (
-            <button
-              type="button"
-              key={value}
-              aria-label={label}
-              title={`Appearance: ${label}`}
-              aria-pressed={preferences.style === value}
-              onClick={() => onChange({ style: value })}
-            >
-              <span aria-hidden="true" className="control-icon">{icon}</span>
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="segmented-control preference-group tone-control" aria-label="Default skin tone">
-        <legend className="sr-only">Default skin tone</legend>
-        <div className="segmented-control__group">
+      <fieldset className="prefs-group">
+        <legend className="prefs-label">Default skin tone</legend>
+        <div className="prefs-tones">
           {TONE_OPTIONS.map(({ value, label }) => (
             <button
               type="button"
               key={value}
+              className="tone-swatch"
               aria-label={label}
               title={`Skin tone: ${label}`}
               aria-pressed={preferences.tone === value}
               onClick={() => onChange({ tone: value })}
             >
-              <span aria-hidden="true" className="tone-icon">{TONE_ICONS[value]}</span>
+              <span aria-hidden="true">{TONE_GLYPHS[value]}</span>
             </button>
           ))}
         </div>
       </fieldset>
 
-      <fieldset className="segmented-control preference-group theme-control" aria-label="Color theme">
-        <legend className="sr-only">Color theme</legend>
-        <div className="segmented-control__group">
-          {THEME_OPTIONS.map(({ value, label, icon }) => (
+      <fieldset className="prefs-group">
+        <legend className="prefs-label">Emoji presentation</legend>
+        <div className="prefs-track">
+          {STYLE_OPTIONS.map(({ value, label, display }) => (
             <button
               type="button"
               key={value}
               aria-label={label}
-              title={`Theme: ${label}`}
+              title={`Presentation: ${label}`}
+              aria-pressed={preferences.style === value}
+              onClick={() => onChange({ style: value })}
+            >
+              {display}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="prefs-group">
+        <legend className="prefs-label">Theme</legend>
+        <div className="prefs-track">
+          {THEME_OPTIONS.map(({ value, label, display }) => (
+            <button
+              type="button"
+              key={value}
+              aria-label={label}
+              title={label}
               aria-pressed={preferences.theme === value}
               onClick={() => onChange({ theme: value })}
             >
-              <span aria-hidden="true" className="theme-icon">{icon}</span>
+              {display}
             </button>
           ))}
         </div>
@@ -109,15 +151,46 @@ export function PreferencePanel({ preferences, onChange }: PreferencePanelProps)
 
       <button
         type="button"
-        className="quick-copy-button"
-        aria-label="Copy a single emoji on tap"
-        title="Copy a single emoji on tap"
+        className="prefs-toggle"
+        aria-label="Quick copy: copy a single emoji or icon on tap"
         aria-pressed={preferences.quickCopy}
         onClick={() => onChange({ quickCopy: !preferences.quickCopy })}
       >
-        <span aria-hidden="true">⚡</span>
-        <span className="quick-copy-label">Quick copy</span>
+        <span className="prefs-toggle__copy">
+          <span className="prefs-toggle__title">Quick copy</span>
+          <span className="prefs-toggle__hint">
+            {preferences.quickCopy
+              ? 'Tiles copy straight to the clipboard'
+              : 'Tiles build a message you copy once'}
+          </span>
+        </span>
+        <span className="switch" aria-hidden="true">
+          <span className="switch__knob" />
+        </span>
       </button>
+
+      <fieldset className="prefs-group">
+        <legend className="prefs-label">Icon quick-copy format</legend>
+        <div className="prefs-track">
+          {ICON_FORMAT_OPTIONS.map(({ value, label, display }) => (
+            <button
+              type="button"
+              key={value}
+              aria-label={label}
+              title={label}
+              aria-pressed={preferences.iconCopyFormat === value}
+              onClick={() => onChange({ iconCopyFormat: value })}
+            >
+              {display}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <p className="prefs-note">
+        Everything is kept on this device — favorites, recents and preferences never
+        leave the browser.
+      </p>
     </div>
   );
 }

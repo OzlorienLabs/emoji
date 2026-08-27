@@ -21,7 +21,9 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 - Vite 8 for development and production bundling
 - `emojibase-data` 17.0.0 as an exact-pinned build-time adapter for Unicode Emoji 17.0 and CLDR 48
 - Vitest 4, Testing Library, `user-event`, and V8 coverage for unit/component integration tests
-- Plain CSS with semantic design tokens; no runtime UI framework, icon font, analytics, ads, or remote font
+- Plain CSS with semantic design tokens; no runtime UI framework, icon font, or ads
+- Display typography is self-hosted as committed woff2 subsets, so the running app makes no remote font request
+- Chrome's built-in Prompt API is used opportunistically for on-device message polish; the feature is absent, never degraded, when the API or the hardware is unavailable
 - Static Vercel deployment; no runtime API or database
 
 ## Data Contract
@@ -40,6 +42,7 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 npm run dev
 npm run generate:data
 npm run generate:icons
+npm run generate:fonts
 npm run test
 npm run test:coverage
 npm run typecheck
@@ -52,14 +55,15 @@ npm run preview
 ## Project Structure
 
 ```text
-public/data/             Generated, self-hosted Emoji 17 catalog
+public/data/             Generated, self-hosted Emoji 17 and Lucide catalogs
+public/fonts/            Generated, self-hosted variable woff2 subsets
 public/icons/            Generated PWA icon set
 public/sw.js             Offline caching for the shell, assets, and catalog
 scripts/                 Reproducible data generation, icon drawing, integrity checks
 src/components/          Focused React UI components and colocated tests
 src/data/                Catalog contracts and reviewed intent aliases
-src/hooks/               Catalog loading and persistent preferences
-src/lib/                 Pure search, variants, composer, clipboard, and storage logic
+src/hooks/               Catalog loading, persistent preferences, media queries, on-device AI
+src/lib/                 Pure search, variants, composer, clipboard, storage, motion, and AI logic
 src/test/                Test setup and stable fixtures
 tasks/                   Implementation plan and progress checklist
 docs/                    Product specification and source/architecture notes
@@ -102,25 +106,31 @@ Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`
 
 ## Interaction Contract
 
-- Search is labeled, clearable, URL-shareable, and focusable with `/`; `Escape` clears it.
-- Category navigation uses labeled chips and keeps the active category visible.
+- Search is labeled, clearable, URL-shareable, and focusable with `/`. `Escape` unwinds exactly one layer per press, in priority order: details sheet, then preferences popover, then the query.
+- `Cmd/Ctrl + Enter` copies the composed message from anywhere outside a text field.
+- Category navigation uses labeled chips and keeps the active category visible; pressing the active chip clears it.
+- A content-type filter switches the pool between all, emoji, and icons, and clears any active category.
 - Emoji tiles are real buttons with names. Selecting appends the exact glyph to the composer; quick-copy mode copies a single glyph instead.
-- The composer accepts emoji and text, supports undo and clear, reports selected count, and copies its exact content without auto-clearing.
+- The composer accepts emoji and text, supports undo and clear, reports both a character count and a selected-content summary, and copies its exact content without auto-clearing. Copying an empty message is refused with an actionable message rather than writing nothing.
+- Icons append a `:kebab-name:` token to the composer and render there as an inline pill; quick-copy mode instead copies the icon in the configured format (SVG, JSX, HTML, or bare name).
 - Clipboard failure leaves the content selected and provides an actionable message.
 - Skin tone uses explicit dataset variants, never modifier concatenation. Mixed-tone families are exposed in the variant dialog.
 - Size controls offer small, medium, and large. Render style offers native emoji and text presentation where the Unicode sequence supports it; copying always preserves the original fully-qualified glyph.
-- Favorites, recent emoji, size, style, tone, theme, and quick-copy preference are stored locally. Arbitrary composer text and search history are not persisted.
-- Details expose annotation, keywords, code points, group/subgroup, version, favorite action, related emoji, and every valid variant.
+- Favorites, recent items (48 most recent), size, style, tone, theme, quick-copy, and icon copy format are stored locally. Arbitrary composer text and search history are not persisted.
+- Details expose annotation, keywords, code points, group/subgroup, version, favorite action, up to 12 related items, and every valid variant. Keyword and tag pills re-run as searches.
+- On-device polish is offered only when the browser's built-in language model reports itself available. It preserves every emoji and icon token from the draft, is cancellable, and lands as a single undo entry.
 
 ## Visual and Responsive Contract
 
-- Original “Emoji Compass” identity built on the warm Clay/Ivory palette: ivory page, paper cards, slate ink, and a clay accent used only as a bordered fill.
-- Reference palette values are display colors, so any token carrying text is derived darker until it clears AA; contrast is asserted against the stylesheet's parsed token blocks rather than reviewed by eye.
-- The loading and error screens render outside the app shell and carry their own dark treatment.
+- Original “Emoji Compass” identity: an aurora-glass shell over a warm clay accent, with two complete themes — daylight (default) and night — plus a `system` setting that follows the operating system. The choice is stamped on the document element so the page, scrollbars, and native controls all follow it.
+- All text is `rgb(var(--ec-ink-rgb) / var(--ec-a-*))` and all surfaces are `var(--ec-fill-1…3)` over `var(--ec-line-1…3)` hairlines. Both ladders carry different values per theme, because the same alpha over ivory and over near-black does not carry the same contrast. No rule reaches for a raw alpha.
+- Contrast is asserted by compositing every layer the way a browser would — text over each rung of the glass ladder, labels over accent fills, toast palettes, focus rings, and icon strokes — against the stylesheet's parsed token blocks rather than reviewed by eye.
+- Glass surfaces pair `backdrop-filter` with `-webkit-backdrop-filter`, and an `@supports` fallback makes every text-carrying surface solid where the property is unavailable.
+- The loading and error screens render outside the app shell and inherit the same token layer.
 - Mobile-first layout with a compact header, sticky search/category controls, minimum 44×44 px targets, and a composer dock above the safe-area inset.
 - Desktop uses the same information hierarchy with inline preferences and a wider grid.
 - No horizontal body overflow at 320 px, 768 px, 1024 px, or 1440 px.
-- Respect reduced-motion and system color-scheme preferences; no gradient-heavy or shadow-heavy template styling.
+- Respect reduced-motion and system color-scheme preferences. Under reduced motion the aurora parallax, grid stagger, counter roll, fly-to-dock animation, and smooth scrolling are all switched off, not merely shortened.
 
 ## Offline and Installability
 
@@ -135,7 +145,7 @@ Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`
 ## Accessibility
 
 - Target WCAG 2.2 AA with valid heading hierarchy, landmarks, visible focus, textual control labels, and 4.5:1 normal-text contrast.
-- Search/filter counts and copy success use polite live status; errors use an alert.
+- Search/filter counts and copy success use polite live status; errors use an alert. The visible toast is `aria-hidden`, so each message is announced exactly once.
 - Tone, style, size, theme, and copy-mode choices never rely on color alone.
 - Dialogs use the native dialog model, restore focus, and remain keyboard operable.
 - The results grid supports logical arrow-key movement while normal Tab navigation skips thousands of tiles after the first grid item.

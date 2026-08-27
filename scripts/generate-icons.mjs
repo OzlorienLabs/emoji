@@ -2,7 +2,7 @@
  * Generates the PWA icon set as PNGs with no image dependencies.
  *
  * The mark is an original compass rose: an ivory ring and needle on the clay
- * accent, drawn with 4x4 supersampling for smooth edges. Everything stays
+ * accent (#ff6f4d, the mid stop of the interface's primary gradient), drawn with 4x4 supersampling for smooth edges. Everything stays
  * inside the maskable safe zone (a circle of 80% of the icon's width), so one
  * file can serve both the "any" and "maskable" purposes.
  *
@@ -14,7 +14,8 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-const CLAY = [0xd9, 0x77, 0x57];
+// The clay accent and ivory needle of the app shell's brand mark.
+const CLAY = [0xff, 0x6f, 0x4d];
 const IVORY = [0xfa, 0xf9, 0xf5];
 
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, index) => {

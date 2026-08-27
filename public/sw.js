@@ -13,7 +13,7 @@ const ASSET_CACHE = `emoji-compass-assets-${VERSION}`;
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE]);
 
 /** Paths whose contents are immutable for a given URL, so cache-first is safe. */
-const IMMUTABLE_PREFIXES = ['/assets/', '/icons/', '/data/'];
+const IMMUTABLE_PREFIXES = ['/assets/', '/icons/', '/data/', '/fonts/'];
 
 const SHELL_URLS = ['/', '/manifest.webmanifest'];
 

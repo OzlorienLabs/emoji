@@ -29,11 +29,14 @@ describe('web app manifest', () => {
     expect(manifest.display).toBe('standalone');
   });
 
-  it('matches the light theme tokens used by the shell', () => {
+  it('matches the daylight theme tokens used by the shell', () => {
     // The install splash must not flash a colour the app never renders.
-    expect(manifest.background_color).toBe('#faf9f5');
-    expect(manifest.theme_color).toBe('#faf9f5');
-    expect(indexHtml).toContain('content="#faf9f5" media="(prefers-color-scheme: light)"');
+    expect(manifest.background_color).toBe('#f4efe5');
+    expect(manifest.theme_color).toBe('#f4efe5');
+    expect(indexHtml).toContain('content="#f4efe5" media="(prefers-color-scheme: light)"');
+    expect(indexHtml).toContain('content="#07060c" media="(prefers-color-scheme: dark)"');
+    // Daylight is the default, so the document is stamped before any script runs.
+    expect(indexHtml).toContain('<html lang="en" data-theme="light">');
   });
 
   it('ships both a maskable and a standard icon at 192 and 512', () => {
@@ -55,6 +58,31 @@ describe('web app manifest', () => {
       expect([...readFileSync(path).subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
       expect(icon.type).toBe('image/png');
     }
+  });
+});
+
+describe('self-hosted typography', () => {
+  const fontStylesheet = read('src/fonts.css');
+
+  it('declares every face against a committed woff2 file', () => {
+    const sources = [...fontStylesheet.matchAll(/url\('([^']+)'\)/g)].map(
+      ([, url]) => url!,
+    );
+    expect(sources.length).toBeGreaterThanOrEqual(6);
+
+    for (const source of sources) {
+      const path = resolve(process.cwd(), 'public', source.replace(/^\//, ''));
+      expect(statSync(path).size, source).toBeGreaterThan(0);
+      // woff2 signature, so a truncated or mislabelled file fails here.
+      expect(String(readFileSync(path).subarray(0, 4)), source).toBe('wOF2');
+    }
+  });
+
+  it('never reaches a third-party font host', () => {
+    expect(fontStylesheet).not.toContain('fonts.googleapis.com');
+    expect(fontStylesheet).not.toContain('fonts.gstatic.com');
+    expect(indexHtml).not.toContain('fonts.googleapis.com');
+    expect(fontStylesheet).toContain('font-display: swap;');
   });
 });
 
@@ -81,6 +109,10 @@ describe('service worker', () => {
   it('drops caches from previous versions on activate', () => {
     expect(serviceWorker).toContain('caches.delete(key)');
   });
+
+  it('serves the self-hosted fonts cache-first so the shell works offline', () => {
+    expect(serviceWorker).toContain("'/fonts/'");
+  });
 });
 
 describe('hosting configuration', () => {
@@ -96,9 +128,10 @@ describe('hosting configuration', () => {
     expect(headerFor('/manifest.webmanifest', 'Cache-Control')).toContain('max-age=0');
   });
 
-  it('keeps hashed assets and catalog data immutable', () => {
+  it('keeps hashed assets, catalog data, and self-hosted fonts immutable', () => {
     expect(headerFor('/assets/(.*)', 'Cache-Control')).toContain('immutable');
     expect(headerFor('/data/(.*)', 'Cache-Control')).toContain('immutable');
+    expect(headerFor('/fonts/(.*)', 'Cache-Control')).toContain('immutable');
   });
 
   it('allows the worker and manifest under the content security policy', () => {
