@@ -17,7 +17,7 @@ import {
 describe('analytics module', () => {
   beforeEach(() => {
     resetAnalyticsForTesting();
-    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_GA_MEASUREMENT_ID', '');
     delete window.gtag;
     delete window.dataLayer;
     delete window.GA_MEASUREMENT_ID;
@@ -42,6 +42,18 @@ describe('analytics module', () => {
     it('returns import.meta.env.VITE_GA_MEASUREMENT_ID if configured', () => {
       vi.stubEnv('VITE_GA_MEASUREMENT_ID', 'G-ENV123');
       expect(getMeasurementId()).toBe('G-ENV123');
+    });
+
+    it('prioritizes custom id over window and environment variables', () => {
+      vi.stubEnv('VITE_GA_MEASUREMENT_ID', 'G-ENV123');
+      window.GA_MEASUREMENT_ID = 'G-WINDOW123';
+      expect(getMeasurementId('G-CUSTOM123')).toBe('G-CUSTOM123');
+    });
+
+    it('prioritizes window.GA_MEASUREMENT_ID over environment variables', () => {
+      vi.stubEnv('VITE_GA_MEASUREMENT_ID', 'G-ENV123');
+      window.GA_MEASUREMENT_ID = 'G-WINDOW123';
+      expect(getMeasurementId()).toBe('G-WINDOW123');
     });
 
     it('returns null if nothing is provided or empty', () => {
@@ -153,6 +165,19 @@ describe('analytics module', () => {
     it('does nothing in trackPageView if window.gtag is not available', () => {
       delete window.gtag;
       expect(() => trackPageView('/path', 'Title')).not.toThrow();
+    });
+
+    it('tracks page view using getMeasurementId fallback if not pre-initialized', () => {
+      resetAnalyticsForTesting();
+      const gtagSpy = vi.fn();
+      window.gtag = gtagSpy;
+      window.GA_MEASUREMENT_ID = 'G-FALLBACK';
+
+      trackPageView('/fallback-path', 'Fallback Title');
+      expect(gtagSpy).toHaveBeenCalledWith('config', 'G-FALLBACK', {
+        page_path: '/fallback-path',
+        page_title: 'Fallback Title',
+      });
     });
 
     it('tracks searches via trackSearch', () => {

@@ -17,13 +17,13 @@ export function getMeasurementId(customId?: string): string | null {
     return customId.trim();
   }
 
+  if (typeof window !== 'undefined' && typeof window.GA_MEASUREMENT_ID === 'string' && window.GA_MEASUREMENT_ID.trim()) {
+    return window.GA_MEASUREMENT_ID.trim();
+  }
+
   const envId = import.meta.env.VITE_GA_MEASUREMENT_ID;
   if (typeof envId === 'string' && envId.trim() && envId !== 'undefined') {
     return envId.trim();
-  }
-
-  if (typeof window !== 'undefined' && typeof window.GA_MEASUREMENT_ID === 'string' && window.GA_MEASUREMENT_ID.trim()) {
-    return window.GA_MEASUREMENT_ID.trim();
   }
 
   return null;
