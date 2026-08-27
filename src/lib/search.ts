@@ -12,12 +12,20 @@ interface IndexedItem {
   group: number | string;
   name: string;
   nameTokens: readonly string[];
+  nameTokensSet: ReadonlySet<string>;
   keywordPhrases: readonly string[];
+  keywordPhrasesSet: ReadonlySet<string>;
   keywordTokens: readonly string[];
+  keywordTokensSet: ReadonlySet<string>;
   shortcodePhrases: readonly string[];
+  shortcodePhrasesSet: ReadonlySet<string>;
   shortcodeTokens: readonly string[];
+  shortcodeTokensSet: ReadonlySet<string>;
   allPhrases: readonly string[];
+  allPhrasesSet: ReadonlySet<string>;
   allTokens: readonly string[];
+  allTokensSet: ReadonlySet<string>;
+  allText: string;
 }
 
 export interface ItemSearchIndex {
@@ -87,18 +95,31 @@ export function createSearchIndex(records: readonly SearchableItem[]): ItemSearc
       const allPhrases = normalizedPhrases(item.searchTerms);
       const group = isIcon ? item.category : item.group;
 
+      const nameTokens = tokensFrom([name, ...(isIcon ? [item.kebabName, item.pascalName] : [])]);
+      const keywordTokens = tokensFrom(keywordPhrases);
+      const shortcodeTokens = tokensFrom(shortcodePhrases);
+      const allTokens = tokensFrom([...allPhrases, ...nameTokens, ...keywordPhrases, ...shortcodeTokens]);
+
       return {
         item,
         kind: isIcon ? 'icon' : 'emoji',
         group,
         name,
-        nameTokens: tokensFrom([name, ...(isIcon ? [item.kebabName, item.pascalName] : [])]),
+        nameTokens,
+        nameTokensSet: new Set(nameTokens),
         keywordPhrases,
-        keywordTokens: tokensFrom(keywordPhrases),
+        keywordPhrasesSet: new Set(keywordPhrases),
+        keywordTokens,
+        keywordTokensSet: new Set(keywordTokens),
         shortcodePhrases,
-        shortcodeTokens: tokensFrom(shortcodePhrases),
+        shortcodePhrasesSet: new Set(shortcodePhrases),
+        shortcodeTokens,
+        shortcodeTokensSet: new Set(shortcodeTokens),
         allPhrases,
-        allTokens: tokensFrom(allPhrases),
+        allPhrasesSet: new Set(allPhrases),
+        allTokens,
+        allTokensSet: new Set(allTokens),
+        allText: ` ${allTokens.join(' ')} `,
       };
     }),
   };
@@ -138,28 +159,28 @@ function boundedDistance(left: string, right: string, maximum: number): number {
 }
 
 function exactTokenScore(document: IndexedItem, candidate: string): number {
-  if (document.nameTokens.includes(candidate)) return 240;
-  if (document.keywordTokens.includes(candidate)) return 210;
-  if (document.shortcodeTokens.includes(candidate)) return 200;
-  if (document.allTokens.includes(candidate)) return 175;
+  if (document.nameTokensSet.has(candidate)) return 240;
+  if (document.keywordTokensSet.has(candidate)) return 210;
+  if (document.shortcodeTokensSet.has(candidate)) return 200;
+  if (document.allTokensSet.has(candidate)) return 175;
   return 0;
 }
 
 function prefixTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.length < 2) return 0;
+  if (!document.allText.includes(` ${candidate}`)) return 0;
   if (document.nameTokens.some((token) => token.startsWith(candidate))) return 165;
   if (document.keywordTokens.some((token) => token.startsWith(candidate))) return 150;
   if (document.shortcodeTokens.some((token) => token.startsWith(candidate))) return 140;
-  if (document.allTokens.some((token) => token.startsWith(candidate))) return 120;
-  return 0;
+  return 120;
 }
 
 function substringTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.length < 3) return 0;
+  if (!document.allText.includes(candidate)) return 0;
   if (document.nameTokens.some((token) => token.includes(candidate))) return 110;
   if (document.keywordTokens.some((token) => token.includes(candidate))) return 100;
-  if (document.allTokens.some((token) => token.includes(candidate))) return 80;
-  return 0;
+  return 80;
 }
 
 function fuzzyTokenScore(document: IndexedItem, candidate: string): number {
@@ -183,7 +204,7 @@ function alternativesFor(token: string): readonly string[] {
 
 function phraseAlternativeScore(document: IndexedItem, candidate: string): number {
   if (document.name === candidate) return 260;
-  if (document.allPhrases.includes(candidate)) return 230;
+  if (document.allPhrasesSet.has(candidate)) return 230;
   if (document.name.includes(candidate)) return 220;
 
   let weakest = Number.POSITIVE_INFINITY;
@@ -198,6 +219,7 @@ function phraseAlternativeScore(document: IndexedItem, candidate: string): numbe
 
 function directTokenScore(document: IndexedItem, candidate: string): number {
   if (candidate.includes(' ')) return phraseAlternativeScore(document, candidate);
+  if (!document.allText.includes(candidate)) return 0;
   return (
     exactTokenScore(document, candidate) ||
     prefixTokenScore(document, candidate) ||
@@ -220,8 +242,14 @@ function createTokenPlan(
 function matchToken(document: IndexedItem, plan: QueryTokenPlan): TokenMatch | undefined {
   let best: TokenMatch | undefined;
 
-  plan.alternatives.forEach((candidate, aliasIndex) => {
+  for (let aliasIndex = 0; aliasIndex < plan.alternatives.length; aliasIndex += 1) {
+    const candidate = plan.alternatives[aliasIndex]!;
     const aliasPenalty = aliasIndex === 0 ? 0 : 18;
+
+    if (best && best.score >= 260 - aliasPenalty) {
+      continue;
+    }
+
     const score =
       directTokenScore(document, candidate) ||
       (plan.allowFuzzy ? fuzzyTokenScore(document, candidate) : 0);
@@ -230,17 +258,17 @@ function matchToken(document: IndexedItem, plan: QueryTokenPlan): TokenMatch | u
     if (adjusted > 0 && (!best || adjusted > best.score)) {
       best = { score: adjusted, term: candidate };
     }
-  });
+  }
 
   return best;
 }
 
 function phraseBoost(document: IndexedItem, query: string): number {
   if (document.name === query) return 900;
-  if (document.shortcodePhrases.includes(query)) return 700;
-  if (document.keywordPhrases.includes(query)) return 600;
+  if (document.shortcodePhrasesSet.has(query)) return 700;
+  if (document.keywordPhrasesSet.has(query)) return 600;
   if (document.name.startsWith(query)) return 450;
-  if (document.allPhrases.includes(query)) return 350;
+  if (document.allPhrasesSet.has(query)) return 350;
   return 0;
 }
 
@@ -251,11 +279,44 @@ function queryRequestsVariant(rawQuery: string, normalizedQuery: string): boolea
   );
 }
 
+const SEARCH_CACHE_LIMIT = 64;
+const searchCache = new WeakMap<ItemSearchIndex, Map<string, ItemSearchResult[]>>();
+
+function getCached(index: ItemSearchIndex, key: string): ItemSearchResult[] | undefined {
+  const indexCache = searchCache.get(index);
+  if (!indexCache) return undefined;
+  const cached = indexCache.get(key);
+  if (!cached) return undefined;
+  indexCache.delete(key);
+  indexCache.set(key, cached);
+  return cached.slice();
+}
+
+function setCached(index: ItemSearchIndex, key: string, results: ItemSearchResult[]): void {
+  let indexCache = searchCache.get(index);
+  if (!indexCache) {
+    indexCache = new Map();
+    searchCache.set(index, indexCache);
+  } else if (indexCache.size >= SEARCH_CACHE_LIMIT) {
+    const oldestKey = indexCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      indexCache.delete(oldestKey);
+    }
+  }
+  indexCache.set(key, results);
+}
+
 export function searchItems(
   index: ItemSearchIndex,
   rawQuery: string,
   options: ItemSearchOptions = {},
 ): ItemSearchResult[] {
+  const cacheKey = `${rawQuery}\0${options.contentType ?? 'all'}\0${options.group ?? ''}\0${options.includeVariants ?? false}\0${options.limit ?? ''}`;
+  const cached = getCached(index, cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const trimmedQuery = rawQuery.trim();
   const normalizedQuery = normalizeSearchText(trimmedQuery);
   const queryTokens = normalizedQuery ? normalizedQuery.split(' ') : [];
@@ -275,7 +336,7 @@ export function searchItems(
   );
 
   if (exactGlyphMatches.length > 0) {
-    return exactGlyphMatches.slice(0, options.limit ?? exactGlyphMatches.length).map(
+    const glyphResults = exactGlyphMatches.slice(0, options.limit ?? exactGlyphMatches.length).map(
       ({ item }) => ({
         item,
         emoji: item as SearchableEmoji,
@@ -283,6 +344,8 @@ export function searchItems(
         matchedTerms: [trimmedQuery],
       }),
     );
+    setCached(index, cacheKey, glyphResults);
+    return glyphResults.slice();
   }
 
   if (queryTokens.length === 0) {
@@ -336,7 +399,10 @@ export function searchItems(
         return true;
       });
 
-  return filtered.slice(0, options.limit ?? filtered.length);
+  const finalResults = filtered.slice(0, options.limit ?? filtered.length);
+  setCached(index, cacheKey, finalResults);
+
+  return finalResults.slice();
 }
 
 export const searchEmojis = searchItems;

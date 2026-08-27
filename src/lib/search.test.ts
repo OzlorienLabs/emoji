@@ -128,6 +128,19 @@ describe('searchEmojis', () => {
     expect(second).toEqual(first);
   });
 
+  it('caches search results and evicts oldest entries when cache limit is reached', () => {
+    const initial = searchItems(emojiIndex, 'celebrate', { limit: 10 });
+    const cached = searchItems(emojiIndex, 'celebrate', { limit: 10 });
+    expect(cached).toEqual(initial);
+
+    for (let index = 0; index < 70; index += 1) {
+      searchItems(emojiIndex, `unique_query_${index}`, { limit: 5 });
+    }
+
+    const afterEviction = searchItems(emojiIndex, 'celebrate', { limit: 10 });
+    expect(afterEviction).toEqual(initial);
+  });
+
   it('keeps repeated full-catalog intent searches within the response budget', () => {
     const startedAt = performance.now();
 
