@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html {
+    --ec-bg: #07060c; --ec-bg-rgb: 7,6,12; --ec-ink: #f4f1ea; --ec-ink-rgb: 244,241,234;
+    --ec-surf-rgb: 255,255,255; --ec-shadow-rgb: 0,0,0;
+    --ec-head-rgb: 9,8,14; --ec-panel-rgb: 14,12,20; --ec-deep-rgb: 4,3,8; --ec-card-rgb: 16,14,22;
+    --ec-icon: #cfe9ff; --ec-link: #ff8a5c; --ec-link-hover: #ffb694; --ec-aurora: 1;
+    --ec-g1: #ff9d6e; --ec-g2: #ffd0a8; --ec-g3: #9b8cff;
+    color-scheme: dark;
+  }
+  html, body { margin: 0; padding: 0; background: var(--ec-bg); transition: background .45s ease; }
+  body { min-width: 320px; overflow-x: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  * { box-sizing: border-box; }
+  ::selection { background: rgba(255,138,92,.32); color: #fff; }
+  :focus-visible { outline: 2px solid #ff8a5c; outline-offset: 3px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(var(--ec-surf-rgb),.14); border-radius: 99px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  a { color: var(--ec-link); text-decoration: none; }
+  a:hover { color: var(--ec-link-hover); }
+  .ec-scroll::-webkit-scrollbar { height: 0; width: 0; }
+  @keyframes ec-a1 { 0%,100% { transform: translate3d(-6%,-4%,0) scale(1); } 50% { transform: translate3d(10%,8%,0) scale(1.18); } }
+  @keyframes ec-a2 { 0%,100% { transform: translate3d(8%,6%,0) scale(1.1); } 50% { transform: translate3d(-8%,-6%,0) scale(.92); } }
+  @keyframes ec-a3 { 0%,100% { transform: translate3d(0,10%,0) scale(.95); } 50% { transform: translate3d(-12%,-8%,0) scale(1.2); } }
+  @keyframes ec-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-16px) rotate(calc(var(--r,0deg) * -1)); } }
+  @keyframes ec-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes ec-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ec-panel { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ec-toast { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ec-spin { to { transform: rotate(360deg); } }
+  @keyframes ec-sheen { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
+  @keyframes ec-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+</style>
+</helmet>
+
+<div style="position:relative;min-height:100vh;background:var(--ec-bg);color:var(--ec-ink);font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;overflow-x:hidden">
+
+  <div aria-hidden="true" ref="{{ auroraRef }}" style="position:fixed;inset:-10%;z-index:0;pointer-events:none;opacity:var(--ec-aurora);filter:blur(0px);transition:transform .6s cubic-bezier(.2,.8,.2,1)">
+    <div style="position:absolute;top:-6%;left:-8%;width:62vw;height:62vw;max-width:900px;max-height:900px;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(255,138,92,.42), rgba(255,138,92,0) 66%);filter:blur(60px);animation:ec-a1 26s ease-in-out infinite"></div>
+    <div style="position:absolute;top:12%;right:-14%;width:58vw;height:58vw;max-width:860px;max-height:860px;border-radius:50%;background:radial-gradient(circle at 50% 50%, rgba(155,140,255,.40), rgba(155,140,255,0) 64%);filter:blur(70px);animation:ec-a2 32s ease-in-out infinite"></div>
+    <div style="position:absolute;bottom:-18%;left:22%;width:54vw;height:54vw;max-width:820px;max-height:820px;border-radius:50%;background:radial-gradient(circle at 50% 50%, rgba(87,227,196,.26), rgba(87,227,196,0) 62%);filter:blur(76px);animation:ec-a3 38s ease-in-out infinite"></div>
+  </div>
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(var(--ec-bg-rgb),0) 30%, rgba(var(--ec-bg-rgb),.72) 100%)"></div>
+
+  <a href="#ec-results" style="position:absolute;left:-9999px;top:0;z-index:99;padding:10px 16px;border-radius:12px;background:#ff8a5c;color:#150d09;font-weight:600" style-focus="left:12px;top:12px">Skip to results</a>
+
+  <header style="position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:14px;height:66px;padding:0 clamp(14px,3vw,30px);background:rgba(var(--ec-head-rgb),.55);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);border-bottom:1px solid rgba(var(--ec-surf-rgb),.08)">
+    <a href="/" style="display:flex;align-items:center;gap:11px;color:var(--ec-ink);text-decoration:none;flex:0 1 auto;min-width:0;overflow:hidden">
+      <span aria-hidden="true" style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(150deg,#ff9d6e,#ff6f4d 55%,#c9552b);box-shadow:0 8px 22px -8px rgba(255,138,92,.9),inset 0 1px 0 rgba(var(--ec-surf-rgb),.45);font-size:19px">🧭</span>
+      <span style="display:flex;flex-direction:column;line-height:1.05;min-width:0;overflow:hidden">
+        <span style="font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:16.5px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Emoji Compass</span>
+        <span style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Meaning-first picker</span>
+      </span>
+    </a>
+    <div style="flex:1 1 8px"></div>
+    <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ themeLabel }}" title="{{ themeLabel }}" style="display:grid;place-items:center;width:40px;height:40px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.11);background:rgba(var(--ec-surf-rgb),.05);color:var(--ec-ink);cursor:pointer;font-size:15px;transition:background .2s,transform .2s" style-hover="background:rgba(var(--ec-surf-rgb),.11);transform:translateY(-1px)">{{ themeGlyph }}</button>
+    <button type="button" onClick="{{ togglePrefs }}" aria-label="Open preferences" style="display:grid;place-items:center;width:40px;height:40px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.11);background:rgba(var(--ec-surf-rgb),.05);color:var(--ec-ink);cursor:pointer;font-size:15px;transition:background .2s,transform .2s" style-hover="background:rgba(var(--ec-surf-rgb),.11);transform:translateY(-1px)">⚙</button>
+    <button type="button" onClick="{{ focusSearch }}" style="display:flex;align-items:center;gap:9px;height:40px;padding:0 16px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.12);background:linear-gradient(140deg,rgba(255,157,110,.95),rgba(255,111,77,.95));color:#180e08;font-weight:700;font-size:13.5px;letter-spacing:-.01em;cursor:pointer;box-shadow:0 10px 26px -12px rgba(255,138,92,.9);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(255,138,92,1)">
+      Search
+      <span aria-hidden="true" style="display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:6px;background:rgba(24,14,8,.22);font-family:'JetBrains Mono',monospace;font-size:11px">/</span>
+    </button>
+  </header>
+
+  <sc-if value="{{ prefsOpen }}">
+    <div style="position:fixed;top:74px;right:clamp(10px,3vw,26px);z-index:45;width:min(320px,calc(100vw - 20px));padding:18px;border-radius:22px;border:1px solid rgba(var(--ec-surf-rgb),.12);background:rgba(var(--ec-panel-rgb),.78);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);box-shadow:0 30px 70px -24px rgba(var(--ec-shadow-rgb),.9),inset 0 1px 0 rgba(var(--ec-surf-rgb),.12);animation:ec-panel .3s cubic-bezier(.2,.8,.2,1) both">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span style="font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">Tile size</span>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px;border-radius:14px;background:rgba(var(--ec-surf-rgb),.05);border:1px solid rgba(var(--ec-surf-rgb),.08)">
+            <sc-for list="{{ sizeOptions }}" as="opt" hint-placeholder-count="3">
+              <button type="button" data-val="{{ opt.id }}" onClick="{{ setSize }}" style="{{ opt.style }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span style="font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">Default skin tone</span>
+          <div style="display:flex;gap:7px">
+            <sc-for list="{{ toneOptions }}" as="opt" hint-placeholder-count="6">
+              <button type="button" data-val="{{ opt.id }}" onClick="{{ setTone }}" aria-label="{{ opt.label }}" title="{{ opt.label }}" style="{{ opt.style }}">{{ opt.glyph }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <button type="button" onClick="{{ toggleQuick }}" style="{{ quickStyle }}">
+          <span style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left">
+            <span style="font-weight:600;font-size:13.5px">Quick copy</span>
+            <span style="font-size:11.5px;color:rgba(var(--ec-ink-rgb),.58);line-height:1.35">{{ quickHint }}</span>
+          </span>
+          <span style="{{ switchTrack }}"><span style="{{ switchKnob }}"></span></span>
+        </button>
+        <p style="margin:0;font-size:11.5px;line-height:1.5;color:rgba(var(--ec-ink-rgb),.58)">Everything is kept on this device — favorites, recents and preferences never leave the browser.</p>
+      </div>
+    </div>
+  </sc-if>
+
+  <main style="position:relative;z-index:1;padding:66px 0 0">
+
+    <section style="width:min(100% - 32px,1180px);margin:0 auto;padding:clamp(26px,4.5vh,64px) 0 clamp(18px,3vh,30px);position:relative">
+      <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none">
+        <span style="position:absolute;top:4%;left:1%;font-size:clamp(24px,3.4vw,44px);opacity:.45;--r:-8deg;animation:ec-float 9s ease-in-out infinite;filter:drop-shadow(0 10px 20px rgba(var(--ec-shadow-rgb),.5))">🫡</span>
+        <span style="position:absolute;top:44%;left:4%;font-size:clamp(22px,2.8vw,36px);opacity:.4;--r:10deg;animation:ec-float 11s ease-in-out .8s infinite">🪩</span>
+        <span style="position:absolute;top:10%;right:1%;font-size:clamp(26px,3.4vw,46px);opacity:.5;--r:12deg;animation:ec-float 10s ease-in-out .4s infinite;filter:drop-shadow(0 10px 20px rgba(var(--ec-shadow-rgb),.5))">🩷</span>
+        <span style="position:absolute;top:52%;right:6%;font-size:clamp(20px,2.4vw,32px);opacity:.35;--r:-14deg;animation:ec-float 13s ease-in-out 1.2s infinite">🫧</span>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.2vh,22px);text-align:center">
+        <span style="display:inline-flex;align-items:center;gap:9px;padding:7px 14px 7px 8px;border-radius:999px;border:1px solid rgba(var(--ec-surf-rgb),.12);background:rgba(var(--ec-surf-rgb),.05);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12px;color:rgba(var(--ec-ink-rgb),.72);animation:ec-in .7s cubic-bezier(.2,.8,.2,1) both">
+          <span style="display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:rgba(87,227,196,.16);font-size:11px">✨</span>
+          Say it without overthinking it
+        </span>
+        <h1 style="margin:0;font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:clamp(2.2rem,5.8vw,4.1rem);line-height:1;letter-spacing:-.035em;max-width:17ch;text-wrap:balance;animation:ec-in .8s cubic-bezier(.2,.8,.2,1) .06s both">
+          Find the <span style="background:linear-gradient(100deg,var(--ec-g1),var(--ec-g2) 40%,var(--ec-g3));-webkit-background-clip:text;background-clip:text;color:transparent">exact</span> emoji you mean
+        </h1>
+        <p style="margin:0;max-width:56ch;font-size:clamp(14.5px,1.5vw,17.5px);line-height:1.55;color:rgba(var(--ec-ink-rgb),.64);text-wrap:pretty;animation:ec-in .8s cubic-bezier(.2,.8,.2,1) .12s both">
+          Search a feeling, a phrase, an object or an icon name. Every Unicode 17 sequence and every Lucide vector, ranked by meaning — no account, no tracking, nothing leaves your device.
+        </p>
+
+        <div style="width:min(100%,720px);animation:ec-in .8s cubic-bezier(.2,.8,.2,1) .18s both">
+          <div ref="{{ searchWrapRef }}" style="position:relative;display:flex;align-items:center;gap:12px;padding:0 12px 0 20px;height:66px;border-radius:22px;border:1px solid rgba(var(--ec-surf-rgb),.14);background:rgba(var(--ec-surf-rgb),.06);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);box-shadow:0 26px 60px -26px rgba(var(--ec-shadow-rgb),.9),inset 0 1px 0 rgba(var(--ec-surf-rgb),.14);transition:border-color .25s,box-shadow .25s,background .25s">
+            <span aria-hidden="true" style="flex:0 0 auto;font-size:18px;opacity:.6">🔍</span>
+            <label for="ec-search" style="position:absolute;left:-9999px">Search emojis and icons</label>
+            <input id="ec-search" ref="{{ searchRef }}" type="search" autocomplete="off" spellcheck="false" placeholder="try “blue heart”, “deadline”, “download icon”…" onInput="{{ onQuery }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" style="flex:1 1 auto;min-width:0;height:100%;border:0;background:transparent;color:var(--ec-ink);font-family:inherit;font-size:clamp(15px,1.7vw,18px);font-weight:500;outline:none;-webkit-appearance:none;appearance:none" />
+            <sc-if value="{{ hasQuery }}">
+              <button type="button" onClick="{{ clearQuery }}" aria-label="Clear search" style="flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:11px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.06);color:rgba(var(--ec-ink-rgb),.72);cursor:pointer;font-size:13px;transition:background .2s" style-hover="background:rgba(var(--ec-surf-rgb),.14)">✕</button>
+            </sc-if>
+            <span style="flex:0 0 auto;display:grid;place-items:center;height:38px;padding:0 14px;border-radius:12px;background:rgba(var(--ec-surf-rgb),.06);border:1px solid rgba(var(--ec-surf-rgb),.08);font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(var(--ec-ink-rgb),.6);white-space:nowrap">{{ countText }}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px">
+            <sc-for list="{{ ideas }}" as="idea" hint-placeholder-count="6">
+              <button type="button" data-val="{{ idea }}" onClick="{{ applyIdea }}" style="padding:7px 13px;border-radius:999px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.04);color:rgba(var(--ec-ink-rgb),.6);font-family:inherit;font-size:12.5px;cursor:pointer;transition:background .2s,color .2s,border-color .2s,transform .2s" style-hover="background:rgba(255,138,92,.14);border-color:rgba(255,138,92,.42);color:#ffd0b8;transform:translateY(-1px)">{{ idea }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(10px,2vw,18px);margin-top:6px;animation:ec-in .8s cubic-bezier(.2,.8,.2,1) .24s both">
+          <sc-for list="{{ stats }}" as="stat" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:132px;padding:14px 20px;border-radius:18px;border:1px solid rgba(var(--ec-surf-rgb),.09);background:rgba(var(--ec-surf-rgb),.04);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
+              <strong style="font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:clamp(20px,2.6vw,28px);letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ stat.value }}</strong>
+              <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">{{ stat.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Filter the catalog" style="position:sticky;top:66px;z-index:30;padding:10px 0;background:rgba(var(--ec-bg-rgb),.62);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border-top:1px solid rgba(var(--ec-surf-rgb),.06);border-bottom:1px solid rgba(var(--ec-surf-rgb),.07)">
+      <div style="width:min(100% - 32px,1180px);margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div ref="{{ segRef }}" style="position:relative;display:flex;gap:2px;padding:4px;border-radius:15px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.05);flex:0 0 auto">
+          <span aria-hidden="true" ref="{{ pillRef }}" style="{{ pillStyle }}"></span>
+          <sc-for list="{{ filterOptions }}" as="opt" hint-placeholder-count="3">
+            <button type="button" data-val="{{ opt.id }}" onClick="{{ setFilter }}" style="{{ opt.style }}">
+              <span aria-hidden="true" style="font-size:13px">{{ opt.icon }}</span>{{ opt.label }}
+            </button>
+          </sc-for>
+        </div>
+        <div class="ec-scroll" style="flex:1 1 320px;min-width:0;display:flex;gap:7px;overflow-x:auto;padding:2px 0;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 22px),transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 22px),transparent)">
+          <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="9">
+            <button type="button" data-val="{{ chip.key }}" onClick="{{ setCategory }}" style="{{ chip.style }}">
+              <span aria-hidden="true" style="font-size:13px;line-height:1">{{ chip.icon }}</span>{{ chip.label }}
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section id="ec-results" aria-labelledby="ec-results-title" style="width:min(100% - 32px,1180px);margin:0 auto;padding:26px 0 clamp(180px,22vh,240px)">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,138,92,.8)">{{ kicker }}</span>
+          <h2 id="ec-results-title" style="margin:0;font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:clamp(1.3rem,2.6vw,1.9rem);letter-spacing:-.025em">{{ resultTitle }}</h2>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(var(--ec-ink-rgb),.64)">{{ shownText }}</span>
+      </div>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:16px;align-items:center;padding:70px 0">
+          <div style="position:relative;width:220px;height:5px;border-radius:99px;background:rgba(var(--ec-surf-rgb),.08);overflow:hidden">
+            <span style="position:absolute;inset:0 auto 0 0;width:28%;border-radius:99px;background:linear-gradient(90deg,#ff8a5c,#9b8cff);animation:ec-bar 1.15s cubic-bezier(.6,.1,.3,.9) infinite"></span>
+          </div>
+          <p style="margin:0;font-size:13.5px;color:rgba(var(--ec-ink-rgb),.58)">Loading 3,953 emoji sequences and 1,777 vector icons…</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasResults }}">
+        <div ref="{{ gridRef }}" role="grid" aria-label="{{ resultTitle }}" style="{{ gridStyle }}">
+          <sc-for list="{{ visible }}" as="item" hint-placeholder-count="36">
+            <div style="position:relative">
+              <button type="button" data-idx="{{ item.vidx }}" onClick="{{ pick }}" title="{{ item.hover }}" aria-label="{{ item.hover }}" style="width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 6px;border:1px solid rgba(var(--ec-surf-rgb),.07);border-radius:18px;background:rgba(var(--ec-surf-rgb),.035);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--ec-ink);font-family:inherit;cursor:pointer;overflow:hidden;transition:transform .24s cubic-bezier(.2,.8,.2,1),background .24s,border-color .24s,box-shadow .24s" style-hover="transform:translateY(-5px);background:rgba(var(--ec-surf-rgb),.1);border-color:rgba(255,138,92,.5);box-shadow:0 18px 34px -16px rgba(255,138,92,.65)">
+                <span aria-hidden="true" style="{{ glyphStyle }}">{{ item.glyph }}{{ item.svg }}</span>
+                <span style="max-width:100%;font-size:10.5px;line-height:1.2;letter-spacing:.01em;color:rgba(var(--ec-ink-rgb),.68);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.label }}</span>
+              </button>
+              <button type="button" data-idx="{{ item.vidx }}" onClick="{{ openDetails }}" aria-label="Details for {{ item.label }}" style="position:absolute;top:6px;right:6px;display:grid;place-items:center;width:26px;height:26px;border-radius:999px;border:1px solid rgba(var(--ec-surf-rgb),.14);background:rgba(var(--ec-head-rgb),.6);color:rgba(var(--ec-ink-rgb),.7);font-family:'Bricolage Grotesque',serif;font-size:12px;cursor:pointer;opacity:.3;transition:opacity .2s,background .2s,color .2s" style-hover="opacity:1;background:#ff8a5c;color:#180e08">i</button>
+            </div>
+          </sc-for>
+        </div>
+        <div ref="{{ sentinelRef }}" style="height:1px"></div>
+        <sc-if value="{{ canLoadMore }}">
+          <div style="display:flex;justify-content:center;padding:28px 0 0">
+            <button type="button" onClick="{{ loadMore }}" style="display:flex;align-items:center;gap:10px;padding:13px 24px;border-radius:15px;border:1px solid rgba(var(--ec-surf-rgb),.14);background:rgba(var(--ec-surf-rgb),.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--ec-ink);font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer;transition:background .2s,transform .2s" style-hover="background:rgba(var(--ec-surf-rgb),.12);transform:translateY(-2px)">Show more {{ moreText }}</button>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isEmpty }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:clamp(40px,8vh,80px) 22px;border-radius:26px;border:1px solid rgba(var(--ec-surf-rgb),.09);background:rgba(var(--ec-surf-rgb),.035);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);text-align:center">
+          <span aria-hidden="true" style="font-size:44px;opacity:.8">🧭</span>
+          <h3 style="margin:0;font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:clamp(1.1rem,2.2vw,1.5rem);letter-spacing:-.02em">{{ emptyTitle }}</h3>
+          <p style="margin:0;max-width:44ch;font-size:13.5px;line-height:1.55;color:rgba(var(--ec-ink-rgb),.58)">{{ emptyBody }}</p>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:4px">
+            <sc-for list="{{ ideas }}" as="idea" hint-placeholder-count="6">
+              <button type="button" data-val="{{ idea }}" onClick="{{ applyIdea }}" style="padding:8px 14px;border-radius:999px;border:1px solid rgba(255,138,92,.32);background:rgba(255,138,92,.12);color:#ffd0b8;font-family:inherit;font-size:12.5px;cursor:pointer;transition:background .2s" style-hover="background:rgba(255,138,92,.24)">{{ idea }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+
+    <footer style="width:min(100% - 32px,1180px);margin:0 auto;padding:0 0 clamp(150px,18vh,200px);display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;font-size:12px;color:rgba(var(--ec-ink-rgb),.62)">
+      <span>Emoji 17.0 · CLDR 48 · Lucide 1.34 — every sequence kept byte-exact</span>
+      <span>No ads. No tracking. No account. Installable &amp; offline.</span>
+    </footer>
+  </main>
+
+  <div ref="{{ dockRef }}" style="position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 12px calc(14px + env(safe-area-inset-bottom));pointer-events:none">
+    <sc-if value="{{ toast }}">
+      <div role="status" style="{{ toastStyle }}">
+        <span aria-hidden="true">{{ toastIcon }}</span>{{ toast }}
+      </div>
+    </sc-if>
+    <div style="pointer-events:auto;width:min(100%,880px);padding:12px;border-radius:24px;border:1px solid rgba(var(--ec-surf-rgb),.13);background:rgba(var(--ec-panel-rgb),.72);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);box-shadow:0 30px 70px -26px rgba(var(--ec-shadow-rgb),.95),inset 0 1px 0 rgba(var(--ec-surf-rgb),.13)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="position:relative;flex:1 1 240px;min-width:0">
+          <div ref="{{ msgRef }}" contenteditable="true" role="textbox" aria-label="Your message" onInput="{{ onMsgInput }}" style="min-height:46px;max-height:120px;overflow-y:auto;padding:12px 14px;border-radius:16px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.05);color:var(--ec-ink);font-family:'Plus Jakarta Sans','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:17px;line-height:1.35;outline:none;word-break:break-word;transition:border-color .2s,background .2s" style-focus="border-color:rgba(255,138,92,.5);background:rgba(var(--ec-surf-rgb),.08)"></div>
+          <sc-if value="{{ msgEmpty }}" hint-placeholder-val="{{ true }}">
+            <span aria-hidden="true" style="position:absolute;left:15px;top:13px;font-size:16px;color:rgba(var(--ec-ink-rgb),.58);pointer-events:none">Tap an emoji to build a message…</span>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;flex:0 0 auto">
+          <span style="display:grid;place-items:center;height:38px;padding:0 12px;border-radius:12px;background:rgba(var(--ec-surf-rgb),.05);border:1px solid rgba(var(--ec-surf-rgb),.08);font-family:'JetBrains Mono',monospace;font-size:11.5px;color:rgba(var(--ec-ink-rgb),.58);white-space:nowrap">{{ msgCount }}</span>
+          <button type="button" onClick="{{ undo }}" aria-label="Undo" title="Undo" style="display:grid;place-items:center;width:44px;height:44px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.05);color:rgba(var(--ec-ink-rgb),.8);font-size:15px;cursor:pointer;transition:background .2s,transform .2s" style-hover="background:rgba(var(--ec-surf-rgb),.12);transform:translateY(-1px)">↺</button>
+          <button type="button" onClick="{{ clearMsg }}" aria-label="Clear message" title="Clear" style="display:grid;place-items:center;width:44px;height:44px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.05);color:rgba(var(--ec-ink-rgb),.8);font-size:15px;cursor:pointer;transition:background .2s,transform .2s" style-hover="background:rgba(var(--ec-surf-rgb),.12);transform:translateY(-1px)">🗑</button>
+          <button type="button" onClick="{{ copyMsg }}" style="position:relative;display:flex;align-items:center;gap:9px;height:44px;padding:0 20px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.16);background:linear-gradient(140deg,#ff9d6e,#ff6f4d 60%,#f2603c);color:#180e08;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;overflow:hidden;box-shadow:0 14px 30px -14px rgba(255,138,92,.95);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-2px);box-shadow:0 20px 40px -14px rgba(255,138,92,1)">
+            Copy
+            <span aria-hidden="true" style="display:grid;place-items:center;min-width:26px;height:20px;padding:0 5px;border-radius:6px;background:rgba(24,14,8,.2);font-family:'JetBrains Mono',monospace;font-size:10.5px">⌘↵</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ details }}">
+    <div role="presentation" onClick="{{ closeDetails }}" style="position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(var(--ec-deep-rgb),.66);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:ec-fade .22s ease both">
+      <div role="dialog" aria-modal="true" aria-label="{{ details.label }}" onClick="{{ stop }}" style="width:min(100%,720px);max-height:min(88vh,880px);overflow-y:auto;margin:0 0 0;padding:clamp(20px,3vw,30px);border-radius:28px 28px 0 0;border:1px solid rgba(var(--ec-surf-rgb),.14);border-bottom:0;background:rgba(var(--ec-card-rgb),.86);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:0 -30px 80px -24px rgba(var(--ec-shadow-rgb),.95),inset 0 1px 0 rgba(var(--ec-surf-rgb),.14);animation:ec-panel .32s cubic-bezier(.2,.8,.2,1) both">
+        <div style="display:flex;align-items:flex-start;gap:18px">
+          <span aria-hidden="true" style="{{ detailsGlyphStyle }}">{{ details.glyph }}{{ details.svg }}</span>
+          <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:7px">
+            <span style="font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,138,92,.85)">{{ details.catLabel }}</span>
+            <h3 style="margin:0;font-family:'Bricolage Grotesque',serif;font-weight:600;font-size:clamp(1.2rem,3vw,1.75rem);letter-spacing:-.025em;text-transform:capitalize">{{ details.label }}</h3>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:rgba(var(--ec-ink-rgb),.58)">{{ details.meta }}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex:0 0 auto">
+            <button type="button" onClick="{{ toggleFav }}" aria-label="Toggle favorite" style="{{ favStyle }}">★</button>
+            <button type="button" onClick="{{ closeDetails }}" aria-label="Close" style="display:grid;place-items:center;width:40px;height:40px;border-radius:13px;border:1px solid rgba(var(--ec-surf-rgb),.12);background:rgba(var(--ec-surf-rgb),.06);color:var(--ec-ink);font-size:14px;cursor:pointer;transition:background .2s" style-hover="background:rgba(var(--ec-surf-rgb),.14)">✕</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ details.hasVariants }}">
+          <div style="margin-top:24px">
+            <span style="display:block;margin-bottom:10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">All {{ details.variantCount }} variants</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ details.variants }}" as="v" hint-placeholder-count="6">
+                <button type="button" data-val="{{ v.glyph }}" onClick="{{ pickVariant }}" title="{{ v.name }}" aria-label="{{ v.name }}" style="display:grid;place-items:center;width:54px;height:54px;border-radius:15px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.05);font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:26px;cursor:pointer;transition:transform .2s,background .2s,border-color .2s" style-hover="transform:translateY(-3px) scale(1.06);background:rgba(255,138,92,.16);border-color:rgba(255,138,92,.45)">{{ v.glyph }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ details.hasKeywords }}">
+          <div style="margin-top:24px">
+            <span style="display:block;margin-bottom:10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">Also known as</span>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <sc-for list="{{ details.keywords }}" as="kw" hint-placeholder-count="6">
+                <button type="button" data-val="{{ kw }}" onClick="{{ applyIdea }}" style="padding:7px 12px;border-radius:999px;border:1px solid rgba(var(--ec-surf-rgb),.1);background:rgba(var(--ec-surf-rgb),.04);color:rgba(var(--ec-ink-rgb),.66);font-family:inherit;font-size:12px;cursor:pointer;transition:background .2s,color .2s" style-hover="background:rgba(155,140,255,.18);color:#dcd6ff">{{ kw }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:26px">
+          <sc-for list="{{ details.actions }}" as="act" hint-placeholder-count="2">
+            <button type="button" data-val="{{ act.id }}" onClick="{{ detailsAction }}" style="{{ act.style }}">{{ act.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ details.hasRelated }}">
+          <div style="margin-top:26px;padding-top:22px;border-top:1px solid rgba(var(--ec-surf-rgb),.08)">
+            <span style="display:block;margin-bottom:12px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--ec-ink-rgb),.58)">Related</span>
+            <div style="display:flex;gap:9px;flex-wrap:wrap">
+              <sc-for list="{{ details.related }}" as="rel" hint-placeholder-count="6">
+                <button type="button" data-val="{{ rel.id }}" onClick="{{ openRelated }}" title="{{ rel.label }}" aria-label="{{ rel.label }}" style="display:grid;place-items:center;width:52px;height:52px;border-radius:15px;border:1px solid rgba(var(--ec-surf-rgb),.09);background:rgba(var(--ec-surf-rgb),.04);color:var(--ec-ink);font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:24px;cursor:pointer;transition:transform .2s,background .2s" style-hover="transform:translateY(-3px);background:rgba(var(--ec-surf-rgb),.1)">{{ rel.glyph }}{{ rel.svg }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;night&quot;,&quot;day&quot;],&quot;default&quot;:&quot;night&quot;,&quot;tsType&quot;:&quot;'night' | 'day'&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;defaultFilter&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;emoji&quot;,&quot;icon&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;'all' | 'emoji' | 'icon'&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;quickCopy&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;'full' | 'subtle'&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+const EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+const TONE_WORDS = ['light skin tone', 'medium-light skin tone', 'medium skin tone', 'medium-dark skin tone', 'dark skin tone'];
+const TONE_GLYPHS = ['✋', '🏻', '🏼', '🏽', '🏾', '🏿'];
+const GROUP_ICONS = {
+  'smileys-emotion': '😀', 'people-body': '👋', component: '🏻', 'animals-nature': '🌿',
+  'food-drink': '🍓', 'travel-places': '🚀', activities: '⚽', objects: '💡', symbols: '❤️', flags: '🏳️',
+};
+const IDEAS = ['blue heart', 'happy dance', 'deadline', 'mindblown', 'work computer', 'download', 'celebration', 'pride'];
+const SIZES = { small: { font: 24, min: 62 }, medium: { font: 33, min: 84 }, large: { font: 46, min: 112 } };
+
+function norm(value) {
+  return String(value || '')
+    .normalize('NFKD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    .replace(/[_\-:]+/g, ' ').replace(/[^\p{Letter}\p{Number}+ ]+/gu, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function camelAttrs(attrs) {
+  const out = {};
+  for (const key of Object.keys(attrs)) {
+    if (key.startsWith('data-') || key.startsWith('aria-')) out[key] = attrs[key];
+    else out[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = attrs[key];
+  }
+  return out;
+}
+
+const DAY_THEME = {
+  '--ec-bg': '#f4efe5', '--ec-bg-rgb': '244,239,229',
+  '--ec-ink': '#241d17', '--ec-ink-rgb': '12,9,7',
+  '--ec-surf-rgb': '36,29,23', '--ec-shadow-rgb': '124,98,72',
+  '--ec-head-rgb': '253,250,245', '--ec-panel-rgb': '255,253,249',
+  '--ec-deep-rgb': '36,29,23', '--ec-card-rgb': '255,252,247',
+  '--ec-icon': '#2c4a63', '--ec-link': '#b8471f', '--ec-link-hover': '#8f3413',
+  '--ec-aurora': '.5', '--ec-g1': '#e05a20', '--ec-g2': '#c1691f', '--ec-g3': '#6151cf',
+  'color-scheme': 'light',
+};
+
+class Component extends DCLogic {
+  state = {
+    loading: true, q: '', filter: 'all', category: null, size: 'medium', tone: 0,
+    theme: 'night', quick: false, limit: 240, msgEmpty: true, msgLen: 0, prefsOpen: false,
+    details: null, toast: null, toastKind: 'ok', favs: [], recents: [], counts: { emoji: 0, icon: 0 },
+  };
+
+  items = [];
+  emojiItems = [];
+  iconItems = [];
+  byId = new Map();
+  visible = [];
+  history = [];
+  msg = '';
+  searchRef = React.createRef();
+  searchWrapRef = React.createRef();
+  gridRef = React.createRef();
+  dockRef = React.createRef();
+  msgRef = React.createRef();
+  sentinelRef = React.createRef();
+  auroraRef = React.createRef();
+  segRef = React.createRef();
+  pillRef = React.createRef();
+
+  movePill() {
+    const seg = this.segRef.current;
+    const pill = this.pillRef.current;
+    if (!seg || !pill) return;
+    const buttons = seg.querySelectorAll('button');
+    const index = ['all', 'emoji', 'icon'].indexOf(this.state.filter);
+    const target = buttons[index < 0 ? 0 : index];
+    if (!target) return;
+    pill.style.left = target.offsetLeft + 'px';
+    pill.style.width = target.offsetWidth + 'px';
+  }
+
+  componentDidMount() {
+    this.reduced = (this.props.motion === 'subtle') ||
+      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const stored = this.readPrefs();
+    const theme = stored.theme || this.props.theme || 'night';
+    this.applyTheme(theme);
+    this.setState({
+      theme,
+      filter: this.props.defaultFilter || 'all',
+      quick: this.props.quickCopy === true || stored.quick === true,
+      size: stored.size || 'medium',
+      tone: stored.tone || 0,
+      favs: stored.favs || [],
+      recents: stored.recents || [],
+    });
+    this.load();
+    document.addEventListener('keydown', this.onKey);
+    window.addEventListener('pointermove', this.onPointer, { passive: true });
+    this.onResize = () => this.movePill();
+    window.addEventListener('resize', this.onResize);
+    requestAnimationFrame(() => this.movePill());
+    this.observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) this.loadMore();
+    }, { rootMargin: '600px' });
+    if (this.sentinelRef.current) this.observer.observe(this.sentinelRef.current);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.onKey);
+    window.removeEventListener('pointermove', this.onPointer);
+    if (this.onResize) window.removeEventListener('resize', this.onResize);
+    if (this.observer) this.observer.disconnect();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    this.movePill();
+    if (this.sentinelRef.current && this.observer) {
+      this.observer.disconnect();
+      this.observer.observe(this.sentinelRef.current);
+    }
+    if (!prevState) return;
+    const sig = (s) => [s.q, s.filter, s.category, s.size, s.tone].join('|');
+    if (sig(prevState) !== sig(this.state)) this.staggerGrid();
+  }
+
+  async load() {
+    try {
+      const [emojiRes, iconRes] = await Promise.all([
+        fetch('./data/emoji-en-17.0.json'),
+        fetch('./data/icons-1.34.json'),
+      ]);
+      if (!emojiRes.ok || !iconRes.ok) throw new Error('Catalog request failed');
+      const [emoji, icons] = await Promise.all([emojiRes.json(), iconRes.json()]);
+      const groups = new Map(emoji.groups.map((g) => [g.id, g]));
+
+      this.emojiItems = emoji.emojis.map((family, index) => {
+        const group = groups.get(family.group) || { label: 'Other', key: '' };
+        const tones = {};
+        for (const v of family.variants || []) {
+          const name = norm(v.name);
+          TONE_WORDS.forEach((word, i) => {
+            if (!tones[i + 1] && name.includes(norm(word)) && !name.includes('medium-light skin tone, ')) tones[i + 1] = v.glyph;
+          });
+        }
+        return {
+          id: 'e:' + family.id, isIcon: false, glyph: family.glyph, svg: null,
+          label: family.name, hover: family.name + ' · ' + group.label,
+          cat: family.group, catLabel: group.label, order: index, tones,
+          nameNorm: norm(family.name),
+          terms: norm([family.name, group.label, (family.keywords || []).join(' '), (family.shortcodes || []).join(' ')].join(' ')),
+          keywords: (family.keywords || []).slice(0, 14),
+          variants: family.variants || [], codepoint: family.id, version: family.version,
+          shortcodes: family.shortcodes || [],
+        };
+      });
+
+      this.iconItems = icons.icons.map((icon, index) => ({
+        id: 'i:' + icon.id, isIcon: true, glyph: '', svg: this.iconEl(icon.nodes),
+        label: icon.name, hover: icon.name + ' · ' + icon.categoryLabel,
+        cat: icon.category, catLabel: icon.categoryLabel, order: index, tones: {},
+        nameNorm: norm(icon.name),
+        terms: norm([icon.name, icon.kebabName, icon.categoryLabel, (icon.tags || []).join(' ')].join(' ')),
+        keywords: (icon.tags || []).slice(0, 14),
+        variants: [], nodes: icon.nodes, kebab: icon.kebabName, pascal: icon.pascalName,
+        codepoint: '', version: 0, shortcodes: [],
+      }));
+
+      this.items = [...this.emojiItems, ...this.iconItems];
+      this.byId = new Map(this.items.map((it) => [it.id, it]));
+      this.emojiGroups = emoji.groups.map((g) => ({ key: 'e' + g.id, id: g.id, label: g.label, icon: GROUP_ICONS[g.key] || '•' }));
+      this.iconCats = icons.categories.map((c) => ({ key: 'i' + c.id, id: c.id, label: c.label, icon: c.icon || '⚡' }));
+      this.setState({ loading: false, counts: { emoji: emoji.totalCount, icon: icons.totalCount } });
+      this.rollCounters(emoji.totalCount, icons.totalCount);
+      requestAnimationFrame(() => this.staggerGrid());
+    } catch (err) {
+      this.setState({ loading: false });
+      this.showToast('Catalog failed to load — check your connection', 'err');
+    }
+  }
+
+  iconEl(nodes) {
+    return React.createElement('svg', {
+      width: '1em', height: '1em', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+      strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round',
+      style: { display: 'block', color: 'var(--ec-icon)' },
+    }, (nodes || []).map(([tag, attrs], i) => React.createElement(tag, { key: i, ...camelAttrs(attrs) })));
+  }
+
+  rollCounters(emojiTotal, iconTotal) {
+    if (this.reduced) { this.setState({ shown: { emoji: emojiTotal, icon: iconTotal } }); return; }
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / 900);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.setState({ shown: { emoji: Math.round(emojiTotal * eased), icon: Math.round(iconTotal * eased) } });
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  staggerGrid() {
+    const grid = this.gridRef.current;
+    if (!grid || this.reduced || !grid.animate) return;
+    const cells = Array.prototype.slice.call(grid.children, 0, 48);
+    cells.forEach((cell, i) => {
+      cell.animate(
+        [{ opacity: 0, transform: 'translateY(12px) scale(.94)' }, { opacity: 1, transform: 'none' }],
+        { duration: 340, delay: Math.min(i * 11, 420), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' },
+      );
+    });
+  }
+
+  onPointer = (event) => {
+    if (this.reduced || !this.auroraRef.current) return;
+    const x = (event.clientX / window.innerWidth - 0.5) * 26;
+    const y = (event.clientY / window.innerHeight - 0.5) * 26;
+    this.auroraRef.current.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+  };
+
+  onKey = (event) => {
+    const target = event.target;
+    const editable = target instanceof Element && target.matches('input, textarea, [contenteditable="true"]');
+    if (event.key === '/' && !editable) { event.preventDefault(); this.focusSearch(); }
+    else if (event.key === 'Escape') {
+      if (this.state.details) this.closeDetails();
+      else if (this.state.prefsOpen) this.setState({ prefsOpen: false });
+      else if (this.state.q) this.clearQuery();
+    } else if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); this.copyMsg(); }
+  };
+
+  readPrefs() {
+    try { return JSON.parse(localStorage.getItem('ec.compass.v1') || '{}') || {}; } catch (_) { return {}; }
+  }
+
+  writePrefs(patch) {
+    try {
+      const next = { ...this.readPrefs(), ...patch };
+      localStorage.setItem('ec.compass.v1', JSON.stringify(next));
+    } catch (_) { /* storage unavailable */ }
+  }
+
+  focusSearch = () => {
+    const input = this.searchRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+    window.scrollTo({ top: 0, behavior: this.reduced ? 'auto' : 'smooth' });
+  };
+
+  onSearchFocus = () => {
+    const el = this.searchWrapRef.current;
+    if (el) {
+      el.style.borderColor = 'rgba(255,138,92,.6)';
+      el.style.background = 'rgba(var(--ec-surf-rgb),.09)';
+      el.style.boxShadow = '0 26px 60px -26px rgba(var(--ec-shadow-rgb),.9), 0 0 0 4px rgba(255,138,92,.18), inset 0 1px 0 rgba(var(--ec-surf-rgb),.16)';
+    }
+  };
+
+  onSearchBlur = () => {
+    const el = this.searchWrapRef.current;
+    if (el) {
+      el.style.borderColor = 'rgba(var(--ec-surf-rgb),.14)';
+      el.style.background = 'rgba(var(--ec-surf-rgb),.06)';
+      el.style.boxShadow = '0 26px 60px -26px rgba(var(--ec-shadow-rgb),.9), inset 0 1px 0 rgba(var(--ec-surf-rgb),.14)';
+    }
+  };
+
+  onQuery = (event) => {
+    const value = event.target.value.slice(0, 120);
+    clearTimeout(this.queryTimer);
+    this.queryTimer = setTimeout(() => this.setState({ q: value, limit: 240 }), 90);
+  };
+
+  clearQuery = () => {
+    if (this.searchRef.current) this.searchRef.current.value = '';
+    this.setState({ q: '', limit: 240 });
+  };
+
+  applyIdea = (event) => {
+    const value = event.currentTarget.dataset.val || '';
+    if (this.searchRef.current) this.searchRef.current.value = value;
+    this.setState({ q: value, limit: 240, category: null, details: null });
+    const results = document.getElementById('ec-results');
+    if (results) window.scrollTo({ top: results.offsetTop - 150, behavior: this.reduced ? 'auto' : 'smooth' });
+  };
+
+  setFilter = (event) => this.setState({ filter: event.currentTarget.dataset.val, category: null, limit: 240 });
+
+  setCategory = (event) => {
+    const key = event.currentTarget.dataset.val;
+    this.setState((s) => ({ category: s.category === key ? null : key, limit: 240 }));
+  };
+
+  setSize = (event) => {
+    const size = event.currentTarget.dataset.val;
+    this.setState({ size });
+    this.writePrefs({ size });
+  };
+
+  setTone = (event) => {
+    const tone = Number(event.currentTarget.dataset.val);
+    this.setState({ tone });
+    this.writePrefs({ tone });
+  };
+
+  applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'day') {
+      Object.keys(DAY_THEME).forEach((k) => root.style.setProperty(k, DAY_THEME[k]));
+    } else {
+      Object.keys(DAY_THEME).forEach((k) => root.style.removeProperty(k));
+    }
+  }
+
+  toggleTheme = () => this.setState((s) => {
+    const theme = s.theme === 'day' ? 'night' : 'day';
+    this.applyTheme(theme);
+    this.writePrefs({ theme });
+    return { theme };
+  });
+
+  toggleQuick = () => this.setState((s) => {
+    this.writePrefs({ quick: !s.quick });
+    return { quick: !s.quick };
+  });
+
+  togglePrefs = () => this.setState((s) => ({ prefsOpen: !s.prefsOpen }));
+
+  glyphFor(item) {
+    if (item.isIcon) return '';
+    return (this.state.tone && item.tones[this.state.tone]) || item.glyph;
+  }
+
+  results() {
+    const { q, filter, category } = this.state;
+    let pool = filter === 'emoji' ? this.emojiItems : filter === 'icon' ? this.iconItems : this.items;
+
+    if (category === 'fav') pool = this.state.favs.map((id) => this.byId.get(id)).filter(Boolean);
+    else if (category === 'recent') pool = this.state.recents.map((id) => this.byId.get(id)).filter(Boolean);
+    else if (category) {
+      const isEmojiCat = category.charAt(0) === 'e';
+      const value = isEmojiCat ? Number(category.slice(1)) : category.slice(1);
+      pool = pool.filter((it) => it.isIcon !== isEmojiCat && it.cat === value);
+    }
+
+    const query = norm(q);
+    if (!query) return pool;
+
+    const raw = q.trim();
+    const tokens = query.split(' ').filter(Boolean);
+    const scored = [];
+    for (const item of pool) {
+      if (raw && !item.isIcon && (item.glyph === raw || item.codepoint.toLowerCase() === raw.toLowerCase().replace(/^u\+/, ''))) {
+        scored.push({ item, score: -10 });
+        continue;
+      }
+      let score = 0;
+      let ok = true;
+      for (const token of tokens) {
+        if (item.nameNorm === token) score += 0;
+        else if (item.nameNorm.startsWith(token + ' ') || item.nameNorm === token) score += 2;
+        else if ((' ' + item.nameNorm).includes(' ' + token)) score += 4;
+        else if (item.nameNorm.includes(token)) score += 9;
+        else if ((' ' + item.terms).includes(' ' + token)) score += 13;
+        else if (item.terms.includes(token)) score += 22;
+        else { ok = false; break; }
+      }
+      if (ok) scored.push({ item, score });
+    }
+    scored.sort((a, b) => a.score - b.score || a.item.order - b.item.order || (a.item.isIcon ? 1 : -1));
+    return scored.map((entry) => entry.item);
+  }
+
+  remember(id) {
+    this.setState((s) => {
+      const recents = [id, ...s.recents.filter((x) => x !== id)].slice(0, 48);
+      this.writePrefs({ recents });
+      return { recents };
+    });
+  }
+
+  fly(sourceEl) {
+    const dock = this.dockRef.current;
+    if (!dock || !sourceEl || this.reduced || !sourceEl.animate) return;
+    const from = sourceEl.getBoundingClientRect();
+    const to = dock.getBoundingClientRect();
+    const ghost = sourceEl.cloneNode(true);
+    Object.assign(ghost.style, {
+      position: 'fixed', left: from.left + 'px', top: from.top + 'px',
+      width: from.width + 'px', height: from.height + 'px', margin: '0',
+      zIndex: '60', pointerEvents: 'none', background: 'transparent',
+      border: '1px solid rgba(255,138,92,.35)', boxShadow: 'none',
+    });
+    document.body.appendChild(ghost);
+    const dx = (to.left + Math.min(to.width * 0.28, 220)) - from.left;
+    const dy = (to.top + 40) - from.top;
+    ghost.animate([
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: 'translate(' + dx * 0.6 + 'px,' + (dy - 90) + 'px) scale(.8)', opacity: .95, offset: .6 },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.3)', opacity: 0 },
+    ], { duration: 560, easing: 'cubic-bezier(.32,.86,.28,1)' }).finished
+      .then(() => ghost.remove()).catch(() => ghost.remove());
+  }
+
+  appendMsg(text) {
+    this.history.push(this.msg);
+    if (this.history.length > 40) this.history.shift();
+    this.msg += text;
+    this.syncMsg();
+  }
+
+  syncMsg() {
+    const el = this.msgRef.current;
+    if (el && el.textContent !== this.msg) el.textContent = this.msg;
+    this.setState({ msgEmpty: this.msg.length === 0, msgLen: Array.from(this.msg).length });
+  }
+
+  onMsgInput = (event) => {
+    this.history.push(this.msg);
+    this.msg = event.currentTarget.textContent || '';
+    this.setState({ msgEmpty: this.msg.length === 0, msgLen: Array.from(this.msg).length });
+  };
+
+  undo = () => {
+    if (!this.history.length) { this.showToast('Nothing to undo', 'err'); return; }
+    this.msg = this.history.pop();
+    this.syncMsg();
+  };
+
+  clearMsg = () => {
+    if (!this.msg) return;
+    this.history.push(this.msg);
+    this.msg = '';
+    this.syncMsg();
+  };
+
+  copyMsg = () => {
+    if (!this.msg.trim()) { this.showToast('Add something to your message first', 'err'); return; }
+    this.copy(this.msg, 'Message copied');
+  };
+
+  async copy(text, label) {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showToast(label, 'ok');
+    } catch (_) {
+      try {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand('copy');
+        area.remove();
+        this.showToast(ok ? label : 'Copy blocked — press ⌘C to copy the selection', ok ? 'ok' : 'err');
+      } catch (err) {
+        this.showToast('Copy blocked by the browser', 'err');
+      }
+    }
+  }
+
+  showToast(message, kind) {
+    clearTimeout(this.toastTimer);
+    this.setState({ toast: message, toastKind: kind || 'ok' });
+    this.toastTimer = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  pick = (event) => {
+    const el = event.currentTarget;
+    const item = this.visible[Number(el.dataset.idx)];
+    if (!item) return;
+    this.remember(item.id);
+    const glyph = this.glyphFor(item);
+    if (item.isIcon) {
+      if (this.state.quick) { this.copy(this.iconSvgText(item), item.label + ' SVG copied'); return; }
+      this.fly(el);
+      this.appendMsg(':' + item.kebab + ':');
+      this.showToast(item.label + ' added', 'ok');
+      return;
+    }
+    if (this.state.quick) { this.copy(glyph, item.label + ' copied'); return; }
+    this.fly(el);
+    this.appendMsg(glyph);
+    this.showToast(item.label + ' added', 'ok');
+  };
+
+  iconSvgText(item) {
+    const body = (item.nodes || []).map(([tag, attrs]) =>
+      '  <' + tag + ' ' + Object.keys(attrs).map((k) => k + '="' + attrs[k] + '"').join(' ') + ' />').join('\n');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n' + body + '\n</svg>';
+  }
+
+  iconJsxText(item) {
+    return '<' + item.pascal + ' size={24} strokeWidth={2} />';
+  }
+
+  openDetails = (event) => {
+    event.stopPropagation();
+    const item = this.visible[Number(event.currentTarget.dataset.idx)];
+    if (item) this.setState({ details: item.id });
+  };
+
+  openRelated = (event) => {
+    const id = event.currentTarget.dataset.val;
+    if (this.byId.has(id)) this.setState({ details: id });
+  };
+
+  closeDetails = () => this.setState({ details: null });
+
+  stop = (event) => event.stopPropagation();
+
+  toggleFav = () => {
+    const id = this.state.details;
+    if (!id) return;
+    this.setState((s) => {
+      const favs = s.favs.includes(id) ? s.favs.filter((x) => x !== id) : [id, ...s.favs];
+      this.writePrefs({ favs });
+      return { favs };
+    });
+  };
+
+  pickVariant = (event) => {
+    const glyph = event.currentTarget.dataset.val;
+    const id = this.state.details;
+    if (this.state.quick) { this.copy(glyph, 'Variant copied'); return; }
+    this.appendMsg(glyph);
+    if (id) this.remember(id);
+    this.showToast('Variant added', 'ok');
+  };
+
+  detailsAction = (event) => {
+    const item = this.byId.get(this.state.details);
+    if (!item) return;
+    const action = event.currentTarget.dataset.val;
+    if (action === 'add') {
+      this.appendMsg(item.isIcon ? ':' + item.kebab + ':' : this.glyphFor(item));
+      this.remember(item.id);
+      this.showToast(item.label + ' added', 'ok');
+    } else if (action === 'glyph') this.copy(this.glyphFor(item), item.label + ' copied');
+    else if (action === 'svg') this.copy(this.iconSvgText(item), 'SVG copied');
+    else if (action === 'jsx') this.copy(this.iconJsxText(item), 'JSX copied');
+    else if (action === 'name') this.copy(item.kebab, 'Name copied');
+    else if (action === 'shortcode') this.copy(':' + (item.shortcodes[0] || item.nameNorm.replace(/ /g, '_')) + ':', 'Shortcode copied');
+  };
+
+  loadMore = () => {
+    if (this.total > this.state.limit) this.setState((s) => ({ limit: s.limit + 240 }));
+  };
+
+  segStyle(active) {
+    return {
+      position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', gap: '7px',
+      height: '38px', padding: '0 15px', borderRadius: '11px', border: '1px solid transparent',
+      background: 'transparent', color: active ? '#180e08' : 'rgba(var(--ec-ink-rgb),.62)',
+      fontFamily: 'inherit', fontWeight: active ? 700 : 500, fontSize: '13px',
+      cursor: 'pointer', whiteSpace: 'nowrap', transition: 'color .25s',
+    };
+  }
+
+  chipStyle(active) {
+    return {
+      display: 'flex', alignItems: 'center', gap: '7px', flex: '0 0 auto', height: '38px',
+      padding: '0 14px', borderRadius: '999px',
+      border: '1px solid ' + (active ? 'rgba(255,138,92,.55)' : 'rgba(var(--ec-surf-rgb),.09)'),
+      background: active ? 'rgba(255,138,92,.16)' : 'rgba(var(--ec-surf-rgb),.04)',
+      color: active ? '#ffd0b8' : 'rgba(var(--ec-ink-rgb),.6)',
+      fontFamily: 'inherit', fontWeight: active ? 600 : 500, fontSize: '12.5px',
+      cursor: 'pointer', whiteSpace: 'nowrap',
+      transition: 'background .2s, color .2s, border-color .2s, transform .2s',
+      boxShadow: active ? '0 10px 24px -14px rgba(255,138,92,.9)' : 'none',
+    };
+  }
+
+  actionStyle(primary) {
+    return {
+      display: 'flex', alignItems: 'center', gap: '8px', height: '46px', padding: '0 20px',
+      borderRadius: '14px',
+      border: '1px solid ' + (primary ? 'rgba(var(--ec-surf-rgb),.16)' : 'rgba(var(--ec-surf-rgb),.11)'),
+      background: primary ? 'linear-gradient(140deg,#ff9d6e,#ff6f4d 60%,#f2603c)' : 'rgba(var(--ec-surf-rgb),.05)',
+      color: primary ? '#180e08' : 'var(--ec-ink)', fontFamily: 'inherit',
+      fontWeight: primary ? 700 : 600, fontSize: '13.5px', cursor: 'pointer',
+      boxShadow: primary ? '0 14px 30px -14px rgba(255,138,92,.9)' : 'none',
+      transition: 'transform .2s, background .2s',
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const sizeSpec = SIZES[s.size] || SIZES.medium;
+    const list = s.loading ? [] : this.results();
+    this.total = list.length;
+    this.visible = list.slice(0, s.limit).map((item, index) => ({
+      ...item, vidx: index, glyph: this.glyphFor(item),
+    }));
+
+    const shown = s.shown || { emoji: s.counts.emoji, icon: s.counts.icon };
+    const filterOptions = [
+      { id: 'all', label: 'All', icon: '✦' },
+      { id: 'emoji', label: 'Emoji', icon: '😀' },
+      { id: 'icon', label: 'Icons', icon: '◆' },
+    ].map((opt) => ({ ...opt, style: this.segStyle(s.filter === opt.id) }));
+
+    const chips = [
+      { key: 'fav', label: 'Favorites', icon: '★' },
+      { key: 'recent', label: 'Recent', icon: '↺' },
+      ...((s.filter === 'icon' ? [] : this.emojiGroups) || []),
+      ...((s.filter === 'emoji' ? [] : this.iconCats) || []),
+    ].map((chip) => ({ ...chip, style: this.chipStyle(s.category === chip.key) }));
+
+    const activeChip = chips.find((chip) => chip.key === s.category);
+    const query = s.q.trim();
+    const resultTitle = query ? '“' + query + '”'
+      : activeChip ? activeChip.label
+        : s.filter === 'emoji' ? 'Every emoji' : s.filter === 'icon' ? 'Every icon' : 'Everything, ranked by meaning';
+
+    const item = s.details ? this.byId.get(s.details) : null;
+    let details = null;
+    if (item) {
+      const variants = (item.variants || []).slice(0, 40).map((v) => ({ glyph: v.glyph, name: v.name }));
+      const related = this.items
+        .filter((other) => other.isIcon === item.isIcon && other.cat === item.cat && other.id !== item.id)
+        .slice(0, 12).map((other) => ({ id: other.id, glyph: this.glyphFor(other), svg: other.svg, label: other.label }));
+      const actions = item.isIcon
+        ? [
+            { id: 'add', label: 'Add to message', primary: true },
+            { id: 'svg', label: 'Copy SVG' },
+            { id: 'jsx', label: 'Copy JSX' },
+            { id: 'name', label: 'Copy name' },
+          ]
+        : [
+            { id: 'add', label: 'Add to message', primary: true },
+            { id: 'glyph', label: 'Copy emoji' },
+            { id: 'shortcode', label: 'Copy shortcode' },
+          ];
+      details = {
+        id: item.id, label: item.label, glyph: this.glyphFor(item),
+        svg: item.isIcon ? this.iconEl(item.nodes) : null, catLabel: item.catLabel,
+        meta: item.isIcon
+          ? item.kebab + ' · Lucide 1.34 · ' + (item.keywords.length || 0) + ' tags'
+          : 'U+' + item.codepoint.replace(/-/g, ' U+') + ' · Emoji ' + item.version + ' · ' + (item.shortcodes[0] ? ':' + item.shortcodes[0] + ':' : ''),
+        hasVariants: variants.length > 0, variants, variantCount: variants.length,
+        hasKeywords: item.keywords.length > 0, keywords: item.keywords,
+        hasRelated: related.length > 0, related,
+        actions: actions.map((a) => ({ ...a, style: this.actionStyle(a.primary) })),
+      };
+    }
+
+    return {
+      loading: s.loading,
+      hasResults: !s.loading && this.visible.length > 0,
+      isEmpty: !s.loading && this.visible.length === 0,
+      visible: this.visible,
+      searchRef: this.searchRef, searchWrapRef: this.searchWrapRef, gridRef: this.gridRef,
+      dockRef: this.dockRef, msgRef: this.msgRef, sentinelRef: this.sentinelRef, auroraRef: this.auroraRef,
+      onQuery: this.onQuery, clearQuery: this.clearQuery, hasQuery: query.length > 0,
+      onSearchFocus: this.onSearchFocus, onSearchBlur: this.onSearchBlur, focusSearch: this.focusSearch,
+      ideas: IDEAS, applyIdea: this.applyIdea,
+      countText: s.loading ? 'loading…' : this.total.toLocaleString('en-US') + ' matches',
+      shownText: s.loading ? '' : 'showing ' + this.visible.length.toLocaleString('en-US') + ' of ' + this.total.toLocaleString('en-US'),
+      kicker: query ? 'Best semantic matches' : activeChip ? 'Filtered view' : 'Browse the catalog',
+      resultTitle,
+      emptyTitle: query ? 'Nothing matched “' + query + '”' : s.category === 'fav' ? 'No favorites yet' : 'Nothing here yet',
+      emptyBody: query
+        ? 'Every word has to match, so try one idea at a time — a feeling, an object, or a shorter phrase.'
+        : s.category === 'fav'
+          ? 'Open any tile’s details and star it to pin it here.'
+          : 'Use an emoji or icon once and it shows up in this list.',
+      stats: [
+        { value: shown.emoji ? shown.emoji.toLocaleString('en-US') : '—', label: 'Emoji sequences' },
+        { value: shown.icon ? shown.icon.toLocaleString('en-US') : '—', label: 'Vector icons' },
+        { value: '0', label: 'Bytes sent to a server' },
+      ],
+      filterOptions, chips, setFilter: this.setFilter, setCategory: this.setCategory,
+      segRef: this.segRef, pillRef: this.pillRef,
+      pillStyle: {
+        position: 'absolute', top: '4px', left: '4px', width: '68px',
+        height: '38px', borderRadius: '11px',
+        background: 'linear-gradient(140deg,#ff9d6e,#ff6f4d 60%,#f2603c)',
+        boxShadow: '0 12px 26px -14px rgba(255,138,92,.95)',
+        transition: 'left .34s cubic-bezier(.2,.8,.2,1), width .34s cubic-bezier(.2,.8,.2,1)',
+      },
+      gridStyle: {
+        display: 'grid', gap: '10px',
+        gridTemplateColumns: 'repeat(auto-fill,minmax(' + sizeSpec.min + 'px,1fr))',
+      },
+      glyphStyle: {
+        fontSize: sizeSpec.font + 'px', lineHeight: 1, fontFamily: EMOJI_FONT,
+        pointerEvents: 'none', transition: 'transform .24s cubic-bezier(.2,.8,.2,1)',
+      },
+      detailsGlyphStyle: {
+        display: 'grid', placeItems: 'center', flex: '0 0 auto', width: '86px', height: '86px',
+        borderRadius: '22px', border: '1px solid rgba(var(--ec-surf-rgb),.1)',
+        background: 'rgba(var(--ec-surf-rgb),.05)', fontSize: '46px', fontFamily: EMOJI_FONT,
+      },
+      pick: this.pick, openDetails: this.openDetails, openRelated: this.openRelated,
+      closeDetails: this.closeDetails, stop: this.stop, pickVariant: this.pickVariant,
+      detailsAction: this.detailsAction, toggleFav: this.toggleFav,
+      favStyle: {
+        display: 'grid', placeItems: 'center', width: '40px', height: '40px', borderRadius: '13px',
+        border: '1px solid ' + (s.favs.includes(s.details) ? 'rgba(255,199,92,.6)' : 'rgba(var(--ec-surf-rgb),.12)'),
+        background: s.favs.includes(s.details) ? 'rgba(255,199,92,.2)' : 'rgba(var(--ec-surf-rgb),.06)',
+        color: s.favs.includes(s.details) ? '#ffc75c' : 'var(--ec-ink)', fontSize: '15px', cursor: 'pointer',
+        transition: 'background .2s, color .2s',
+      },
+      details,
+      canLoadMore: !s.loading && this.total > this.visible.length,
+      loadMore: this.loadMore,
+      moreText: '(' + Math.min(240, this.total - this.visible.length) + ')',
+      msgEmpty: s.msgEmpty, msgCount: s.msgLen + (s.msgLen === 1 ? ' char' : ' chars'),
+      onMsgInput: this.onMsgInput, undo: this.undo, clearMsg: this.clearMsg, copyMsg: this.copyMsg,
+      toast: s.toast, toastIcon: s.toastKind === 'ok' ? '✓' : '⚠',
+      toastStyle: {
+        pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '11px 18px', borderRadius: '999px',
+        border: '1px solid ' + (s.toastKind === 'ok' ? 'rgba(87,227,196,.4)' : 'rgba(255,138,92,.5)'),
+        background: s.toastKind === 'ok' ? 'rgba(11,32,28,.85)' : 'rgba(40,16,10,.85)',
+        backdropFilter: 'blur(20px) saturate(170%)', WebkitBackdropFilter: 'blur(20px) saturate(170%)',
+        color: s.toastKind === 'ok' ? '#b7f5e6' : '#ffd0b8', fontSize: '13px', fontWeight: 600,
+        boxShadow: '0 20px 44px -22px rgba(var(--ec-shadow-rgb),.9)', animation: 'ec-toast .28s cubic-bezier(.2,.8,.2,1) both',
+      },
+      prefsOpen: s.prefsOpen, togglePrefs: this.togglePrefs,
+      sizeOptions: ['small', 'medium', 'large'].map((id) => ({
+        id, label: id === 'small' ? 'S' : id === 'medium' ? 'M' : 'L',
+        style: {
+          height: '36px', borderRadius: '10px', border: '1px solid transparent',
+          background: s.size === id ? 'rgba(255,138,92,.9)' : 'transparent',
+          color: s.size === id ? '#180e08' : 'rgba(var(--ec-ink-rgb),.6)',
+          fontFamily: 'inherit', fontWeight: 700, fontSize: '12.5px', cursor: 'pointer',
+          transition: 'background .2s, color .2s',
+        },
+      })),
+      setSize: this.setSize,
+      toneOptions: TONE_GLYPHS.map((glyph, index) => ({
+        id: index, glyph, label: index === 0 ? 'Default tone' : TONE_WORDS[index - 1],
+        style: {
+          display: 'grid', placeItems: 'center', width: '44px', height: '44px', borderRadius: '12px',
+          border: '1px solid ' + (s.tone === index ? 'rgba(255,138,92,.65)' : 'rgba(var(--ec-surf-rgb),.1)'),
+          background: s.tone === index ? 'rgba(255,138,92,.18)' : 'rgba(var(--ec-surf-rgb),.04)',
+          fontFamily: EMOJI_FONT, fontSize: '18px', cursor: 'pointer',
+          transition: 'background .2s, border-color .2s, transform .2s',
+        },
+      })),
+      setTone: this.setTone, toggleQuick: this.toggleQuick,
+      toggleTheme: this.toggleTheme,
+      themeGlyph: s.theme === 'day' ? '☾' : '☀',
+      themeLabel: s.theme === 'day' ? 'Switch to night' : 'Switch to daylight',
+      quickHint: s.quick ? 'Tiles copy straight to the clipboard' : 'Tiles build a message you copy once',
+      quickStyle: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px',
+        padding: '13px 14px', borderRadius: '16px',
+        border: '1px solid ' + (s.quick ? 'rgba(87,227,196,.4)' : 'rgba(var(--ec-surf-rgb),.1)'),
+        background: s.quick ? 'rgba(87,227,196,.1)' : 'rgba(var(--ec-surf-rgb),.04)',
+        color: 'var(--ec-ink)', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
+        transition: 'background .2s, border-color .2s',
+      },
+      switchTrack: {
+        position: 'relative', flex: '0 0 auto', width: '46px', height: '26px', borderRadius: '999px',
+        background: s.quick ? 'rgba(87,227,196,.85)' : 'rgba(var(--ec-surf-rgb),.14)',
+        transition: 'background .25s', display: 'block',
+      },
+      switchKnob: {
+        position: 'absolute', top: '3px', left: s.quick ? '23px' : '3px', width: '20px', height: '20px',
+        borderRadius: '999px', background: s.quick ? '#07201c' : 'var(--ec-ink)',
+        transition: 'left .25s cubic-bezier(.2,.8,.2,1), background .25s', display: 'block',
+      },
+    };
+  }
+}
+
+</script>
+</body>
+</html>
