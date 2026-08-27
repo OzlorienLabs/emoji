@@ -45,7 +45,7 @@ export function SiteHeader({
 
       <button
         type="button"
-        className="icon-button"
+        className="icon-button icon-button--prefs"
         aria-label="Open preferences"
         aria-expanded={prefsOpen}
         title="Preferences"

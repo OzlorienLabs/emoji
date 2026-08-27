@@ -617,6 +617,10 @@ a:hover {
   background: var(--ec-accent-fill);
 }
 
+.icon-button--prefs {
+  font-size: 27px;
+}
+
 .header-cta {
   display: flex;
   height: 40px;
