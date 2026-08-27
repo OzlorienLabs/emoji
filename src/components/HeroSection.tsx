@@ -26,11 +26,6 @@ export function HeroSection({ searchSlot, ideas, onIdea, stats }: HeroSectionPro
       </div>
 
       <div className="hero__inner">
-        <span className="eyebrow">
-          <span className="eyebrow__spark" aria-hidden="true">✨</span>
-          Say it without overthinking it
-        </span>
-
         <h1 id="hero-title">
           Find the <em>exact</em> emoji you mean
         </h1>
