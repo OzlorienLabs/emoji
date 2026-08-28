@@ -8,7 +8,7 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 
 ### Primary user stories
 
-- As a user, I can type one or more ideas (for example, `blue heart`, `happy dance`, or `work computer`) and receive well-ranked emoji whose names, keywords, or conversational aliases express those ideas.
+- As a user, I can type one or more ideas (for example, `red heart`, `happy dance`, or `work computer`) and receive well-ranked emoji whose names, keywords, or conversational aliases express those ideas.
 - As a user, I can browse every Emoji 17.0 RGI entry through a compact family grid and a complete variant picker.
 - As a user, I can select multiple emoji, combine them with text, and copy the exact composed string.
 - As a user, I can choose visual size, native/text presentation, a default skin tone, a category, favorites, and recent emoji.

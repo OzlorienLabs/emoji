@@ -26,7 +26,7 @@ export function SearchBar({
   onChange,
   onSubmit,
   label = 'Search emojis and icons',
-  placeholder = 'try “blue heart”, “deadline”, “download icon”…',
+  placeholder = 'try “red heart”, “deadline”, “download icon”…',
   resultCount,
   statusMessage,
   resultsId,

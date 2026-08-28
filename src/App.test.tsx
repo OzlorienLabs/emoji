@@ -742,6 +742,10 @@ describe('Emoji Compass', () => {
     await user.keyboard('{Escape}');
     expect(screen.getByRole('searchbox')).toHaveValue('');
 
+    expect(screen.getByRole('button', { name: 'Search for red heart' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Search for blue heart' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Search for pride' })).toBeNull();
+
     await user.click(screen.getByRole('button', { name: 'Search for celebration' }));
     expect(screen.getByRole('searchbox')).toHaveValue('celebration');
     expect(await screen.findByRole('button', { name: 'Add party popper' })).toBeVisible();

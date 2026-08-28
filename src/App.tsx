@@ -84,14 +84,13 @@ interface EmojiExperienceProps extends Omit<AppProps, 'initialCatalog' | 'initia
 
 
 const SEARCH_SUGGESTIONS = [
-  'blue heart',
+  'red heart',
   'happy dance',
   'deadline',
   'mindblown',
   'work computer',
   'download',
   'celebration',
-  'pride',
 ];
 
 /** Success confirmations are fleeting; an actionable error is given longer. */

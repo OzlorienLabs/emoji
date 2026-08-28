@@ -1,6 +1,6 @@
 # Emoji Compass
 
-Emoji Compass is a fast, meaning-first emoji and icon finder. Search for an idea such as `blue heart`, `happy dance`, or `work computer`, choose the exact emoji or skin-tone variant, build a message, and copy the original Unicode string. The app is a static React site with no account, ads, runtime API, or database — the only optional network integration is Google Analytics, and it stays inert unless you configure a measurement ID.
+Emoji Compass is a fast, meaning-first emoji and icon finder. Search for an idea such as `red heart`, `happy dance`, or `work computer`, choose the exact emoji or skin-tone variant, build a message, and copy the original Unicode string. The app is a static React site with no account, ads, runtime API, or database — the only optional network integration is Google Analytics, and it stays inert unless you configure a measurement ID.
 
 # Web App - [🧭 Emoji Compas](https://emoji.ozlorienlabs.com)
 
@@ -18,7 +18,7 @@ Release 1.3.4
 - All 1,777 Lucide 1.34 vector icons, grouped into 15 categories, searchable by name, kebab name, category, and tag
 - 119 reviewed conversational aliases (331 terms) so everyday intents such as `deadline`, `mindblown`, or `workout` reach a fitting emoji
 - A segmented **All / Emoji / Icons** filter with a sliding indicator, plus a scrolling chip rail for favorites, recents, the 10 Unicode groups, and the 15 icon categories — tapping the active chip clears it
-- Eight one-tap idea chips (`blue heart`, `happy dance`, `deadline`, `mindblown`, `work computer`, `download`, `celebration`, `pride`) under the search field and again in the empty state
+- Seven one-tap idea chips (`red heart`, `happy dance`, `deadline`, `mindblown`, `work computer`, `download`, `celebration`) under the search field and again in the empty state
 - Keyword and tag pills inside every details sheet run straight back into search
 - Query, content type, and category live in the URL, so any view is shareable
 
