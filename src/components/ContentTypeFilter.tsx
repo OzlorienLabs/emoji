@@ -4,8 +4,6 @@ import type { ContentType } from '../data/catalog-types';
 export interface ContentTypeFilterProps {
   value: ContentType;
   onChange: (value: ContentType) => void;
-  emojiCount?: number;
-  iconCount?: number;
   totalCount?: number;
 }
 
@@ -25,8 +23,6 @@ interface FilterOption {
 export function ContentTypeFilter({
   value,
   onChange,
-  emojiCount,
-  iconCount,
   totalCount,
 }: ContentTypeFilterProps) {
   const groupRef = useRef<HTMLDivElement>(null);
