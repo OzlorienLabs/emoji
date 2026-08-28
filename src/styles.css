@@ -644,6 +644,89 @@ a:hover {
   transform: translateY(-2px);
 }
 
+.header-quick-copy {
+  display: flex;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--ec-line-2);
+  border-radius: 13px;
+  color: var(--ec-ink);
+  background: var(--ec-fill-2);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.header-quick-copy:hover {
+  background: var(--ec-fill-3);
+  border-color: var(--ec-line-3);
+  transform: translateY(-1px);
+}
+
+.header-quick-copy[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--ec-switch-on) 55%, transparent);
+  background: color-mix(in srgb, var(--ec-switch-on) 14%, var(--ec-fill-2));
+  box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--ec-switch-on) 35%, transparent);
+}
+
+.header-quick-copy[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--ec-switch-on) 20%, var(--ec-fill-2));
+  border-color: color-mix(in srgb, var(--ec-switch-on) 75%, transparent);
+  box-shadow: 0 8px 24px -6px color-mix(in srgb, var(--ec-switch-on) 45%, transparent);
+}
+
+.header-quick-copy__icon {
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s;
+}
+
+.header-quick-copy:hover .header-quick-copy__icon {
+  transform: scale(1.1);
+}
+
+.header-quick-copy[aria-pressed="true"] .header-quick-copy__icon {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ec-switch-on) 80%, transparent));
+}
+
+.header-quick-copy__label {
+  white-space: nowrap;
+}
+
+.header-quick-copy__switch.switch {
+  width: 34px;
+  height: 20px;
+}
+
+.header-quick-copy[aria-pressed="true"] .header-quick-copy__switch {
+  background: var(--ec-switch-on);
+}
+
+.header-quick-copy__switch .switch__knob {
+  width: 14px;
+  height: 14px;
+  top: 3px;
+  left: 3px;
+}
+
+.header-quick-copy[aria-pressed="true"] .header-quick-copy__switch .switch__knob {
+  left: 17px;
+  background: var(--ec-switch-knob-on);
+}
+
 .keycap {
   display: grid;
   min-width: 20px;
@@ -657,7 +740,8 @@ a:hover {
 }
 
 @media (width <= 560px) {
-  .header-cta__text {
+  .header-cta__text,
+  .header-quick-copy__label {
     position: absolute;
     overflow: hidden;
     width: 1px;
@@ -667,6 +751,11 @@ a:hover {
 
   .header-cta {
     padding: 0 12px;
+  }
+
+  .header-quick-copy {
+    padding: 0 10px;
+    gap: 7px;
   }
 }
 

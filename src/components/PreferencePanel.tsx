@@ -149,26 +149,6 @@ export function PreferencePanel({
         </div>
       </fieldset>
 
-      <button
-        type="button"
-        className="prefs-toggle"
-        aria-label="Quick copy: copy a single emoji or icon on tap"
-        aria-pressed={preferences.quickCopy}
-        onClick={() => onChange({ quickCopy: !preferences.quickCopy })}
-      >
-        <span className="prefs-toggle__copy">
-          <span className="prefs-toggle__title">Quick copy</span>
-          <span className="prefs-toggle__hint">
-            {preferences.quickCopy
-              ? 'Tiles copy straight to the clipboard'
-              : 'Tiles build a message you copy once'}
-          </span>
-        </span>
-        <span className="switch" aria-hidden="true">
-          <span className="switch__knob" />
-        </span>
-      </button>
-
       <fieldset className="prefs-group">
         <legend className="prefs-label">Icon quick-copy format</legend>
         <div className="prefs-track">

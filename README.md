@@ -47,7 +47,8 @@ When the browser exposes Chrome's built-in **Prompt API** (`window.LanguageModel
 - Three drifting colour fields behind a vignette, with a subtle pointer parallax
 - Self-hosted Bricolage Grotesque, Plus Jakarta Sans, and JetBrains Mono; no third-party font request at runtime
 - Live catalog counters that roll up on load, a sliding filter indicator, a staggered grid entrance, and a fly-to-dock animation when a tile joins your message
-- A preferences popover covering tile size (S/M/L), default skin tone, native vs. text presentation, theme, quick copy, and icon copy format
+- A quick copy toggle right in the header to switch between direct clipboard copy and message composition
+- A preferences popover covering tile size (S/M/L), default skin tone, native vs. text presentation, theme, and icon copy format
 - Details opens as a bottom sheet at every width, with the glyph, category, code points, every variant, keywords, per-format actions, and up to 12 related items
 - Toasts confirm each action above the composer dock; success clears after 2.6 s and actionable errors after 5 s
 

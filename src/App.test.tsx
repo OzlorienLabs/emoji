@@ -102,6 +102,40 @@ describe('Emoji Compass', () => {
     expect(copy).toHaveBeenCalledWith('<i data-lucide="arrow-right"></i>');
   });
 
+  it('toggles quick copy directly from the site header', async () => {
+    const user = userEvent.setup();
+    const copy = vi.fn().mockResolvedValue(copied());
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: false }}
+        copy={copy}
+      />,
+    );
+
+    const quickCopyToggle = screen.getByRole('button', {
+      name: 'Quick copy: copy a single emoji or icon on tap',
+    });
+    expect(quickCopyToggle).toHaveAttribute('aria-pressed', 'false');
+
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
+
+    // Initially in composer mode: clicking an emoji adds it to composer
+    const heart = await screen.findByRole('button', { name: 'Add blue heart' });
+    await user.click(heart);
+    expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
+
+    // Toggle quick copy ON from the header
+    await user.click(quickCopyToggle);
+    expect(quickCopyToggle).toHaveAttribute('aria-pressed', 'true');
+
+    // Now in quick copy mode: clicking an emoji copies it directly
+    const heartCopy = await screen.findByRole('button', { name: 'Copy blue heart' });
+    await user.click(heartCopy);
+    expect(copy).toHaveBeenCalledWith('💙');
+  });
+
   it('filters by content type tabs (All, Emojis, Icons)', async () => {
     const user = userEvent.setup();
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);

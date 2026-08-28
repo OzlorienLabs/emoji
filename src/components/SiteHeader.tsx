@@ -4,9 +4,10 @@ export interface SiteHeaderProps {
   /** Resolved theme, so the toggle offers the opposite of what is on screen. */
   isDark: boolean;
   prefsOpen: boolean;
+  quickCopy: boolean;
   onToggleTheme: () => void;
   onTogglePrefs: () => void;
-  onFocusSearch: () => void;
+  onToggleQuickCopy: () => void;
   /** The preferences popover, rendered as a child so it anchors to the header. */
   children?: ReactNode;
 }
@@ -14,9 +15,10 @@ export interface SiteHeaderProps {
 export function SiteHeader({
   isDark,
   prefsOpen,
+  quickCopy,
   onToggleTheme,
   onTogglePrefs,
-  onFocusSearch,
+  onToggleQuickCopy,
   children,
 }: SiteHeaderProps) {
   const themeLabel = isDark ? 'Switch to daylight' : 'Switch to night';
@@ -55,9 +57,23 @@ export function SiteHeader({
         <span aria-hidden="true">⚙</span>
       </button>
 
-      <button type="button" className="header-cta" onClick={onFocusSearch}>
-        <span className="header-cta__text">Search</span>
-        <span className="keycap" aria-hidden="true">/</span>
+      <button
+        type="button"
+        className="header-quick-copy"
+        aria-label="Quick copy: copy a single emoji or icon on tap"
+        aria-pressed={quickCopy}
+        title={
+          quickCopy
+            ? 'Quick copy is on: tiles copy straight to the clipboard'
+            : 'Quick copy is off: tiles build a message you copy once'
+        }
+        onClick={onToggleQuickCopy}
+      >
+        <span className="header-quick-copy__icon" aria-hidden="true">⚡</span>
+        <span className="header-quick-copy__label">Quick copy</span>
+        <span className="header-quick-copy__switch switch" aria-hidden="true">
+          <span className="switch__knob" />
+        </span>
       </button>
 
       {children}

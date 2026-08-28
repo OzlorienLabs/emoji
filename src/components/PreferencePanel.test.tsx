@@ -13,14 +13,12 @@ describe('PreferencePanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Text' }));
     await userEvent.click(screen.getByRole('button', { name: 'Dark skin tone' }));
     await userEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
-    await userEvent.click(screen.getByRole('button', { name: /copy a single emoji/i }));
 
     expect(onChange.mock.calls).toEqual([
       [{ size: 'large' }],
       [{ style: 'text' }],
       [{ tone: 5 }],
       [{ theme: 'dark' }],
-      [{ quickCopy: true }],
     ]);
   });
 
@@ -33,7 +31,6 @@ describe('PreferencePanel', () => {
           style: 'text',
           tone: 3,
           theme: 'dark',
-          quickCopy: true,
         }}
         onChange={() => undefined}
       />,
@@ -43,7 +40,6 @@ describe('PreferencePanel', () => {
     expect(screen.getByRole('button', { name: 'Text' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Medium skin tone' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Dark theme' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /copy a single emoji/i })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('supports selecting all skin tone variants', async () => {
@@ -95,13 +91,10 @@ describe('PreferencePanel', () => {
     expect(screen.getByRole('button', { name: 'Native' })).toHaveAttribute('title', 'Presentation: Native');
   });
 
-  it('exposes the quick-copy hint and the icon copy format for every option', async () => {
+  it('exposes the icon copy format for every option', async () => {
     const onChange = vi.fn();
-    const { rerender } = render(
-      <PreferencePanel preferences={createDefaultPreferences()} onChange={onChange} />,
-    );
+    render(<PreferencePanel preferences={createDefaultPreferences()} onChange={onChange} />);
 
-    expect(screen.getByText('Tiles build a message you copy once')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy icons as SVG' }))
       .toHaveAttribute('aria-pressed', 'true');
 
@@ -114,14 +107,6 @@ describe('PreferencePanel', () => {
       await userEvent.click(screen.getByRole('button', { name }));
       expect(onChange).toHaveBeenLastCalledWith({ iconCopyFormat: value });
     }
-
-    rerender(
-      <PreferencePanel
-        preferences={{ ...createDefaultPreferences(), quickCopy: true }}
-        onChange={onChange}
-      />,
-    );
-    expect(screen.getByText('Tiles copy straight to the clipboard')).toBeInTheDocument();
   });
 
   it('dismisses on an outside press but not on a press inside the popover', async () => {

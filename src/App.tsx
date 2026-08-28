@@ -702,7 +702,12 @@ function EmojiExperience({
       <SiteHeader
         isDark={isDark}
         prefsOpen={prefsOpen}
-        onFocusSearch={focusSearch}
+        quickCopy={preferences.quickCopy}
+        onToggleQuickCopy={() => {
+          const next = !preferences.quickCopy;
+          preferenceController.update({ quickCopy: next });
+          trackPreferenceChange('quickCopy', next);
+        }}
         onTogglePrefs={() => setPrefsOpen((open) => !open)}
         onToggleTheme={() => {
           const next = isDark ? 'light' : 'dark';
