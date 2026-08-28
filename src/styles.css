@@ -1328,7 +1328,7 @@ a:hover {
 /* -------------------------------------------------------------- results -- */
 
 .results-section {
-  padding: 26px 0 clamp(180px, 22vh, 240px);
+  padding: 26px 0 clamp(24px, 3.5vh, 36px);
 }
 
 .results-heading {
