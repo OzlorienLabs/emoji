@@ -12,6 +12,7 @@ import { ComposerDock } from './components/ComposerDock';
 import { ContentTypeFilter } from './components/ContentTypeFilter';
 import { EmojiDetailsDialog } from './components/EmojiDetailsDialog';
 import { EmojiGrid, type EmojiGridItem, type GridSelectableItem } from './components/EmojiGrid';
+import { FeedbackDialog } from './components/FeedbackDialog';
 import { HeroSection } from './components/HeroSection';
 import { IconDetailsDialog } from './components/IconDetailsDialog';
 import { PreferencePanel } from './components/PreferencePanel';
@@ -37,6 +38,7 @@ import {
   trackContentTypeChange,
   trackCopy,
   trackDetailsOpen,
+  trackEvent,
   trackPreferenceChange,
   trackSearch,
 } from './lib/analytics';
@@ -211,6 +213,7 @@ function EmojiExperience({
   const [detailsIcon, setDetailsIcon] = useState<IconRecord | null>(null);
   const [hasPolished, setHasPolished] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<Feedback>();
   const searchRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -453,7 +456,8 @@ function EmojiExperience({
       }
 
       if (event.key !== 'Escape') return;
-      if (detailsFamily || detailsIcon) closeDetails();
+      if (feedbackOpen) setFeedbackOpen(false);
+      else if (detailsFamily || detailsIcon) closeDetails();
       else if (prefsOpen) setPrefsOpen(false);
       else if (query) {
         setQuery('');
@@ -462,7 +466,16 @@ function EmojiExperience({
     };
     document.addEventListener('keydown', handleShortcut);
     return () => document.removeEventListener('keydown', handleShortcut);
-  }, [closeDetails, copyComposition, detailsFamily, detailsIcon, focusSearch, prefsOpen, query]);
+  }, [
+    closeDetails,
+    copyComposition,
+    detailsFamily,
+    detailsIcon,
+    feedbackOpen,
+    focusSearch,
+    prefsOpen,
+    query,
+  ]);
 
   useEffect(() => {
     const trimmed = deferredQuery.trim();
@@ -813,8 +826,18 @@ function EmojiExperience({
         </section>
 
         <footer className="site-footer shell-width">
-          <span>Emoji 17.0 · CLDR 48 · Lucide 1.34 — every sequence kept byte-exact</span>
-          <span>No ads. No tracking. No account. Installable &amp; offline.</span>
+          <p className="site-footer__line">Built with curiosity and care</p>
+          <p className="site-footer__line">
+            by{' '}
+            <button
+              type="button"
+              className="site-footer__link"
+              aria-haspopup="dialog"
+              onClick={() => setFeedbackOpen(true)}
+            >
+              Ozlorien Labs
+            </button>
+          </p>
         </footer>
       </main>
 
@@ -858,6 +881,15 @@ function EmojiExperience({
           </p>
         )}
       </div>
+
+      {feedbackOpen ? (
+        <FeedbackDialog
+          onClose={() => setFeedbackOpen(false)}
+          onSent={(sent) => {
+            trackEvent('feedback_submit', { has_email: sent.email.trim().length > 0 });
+          }}
+        />
+      ) : null}
 
       {detailsFamily ? (
         <EmojiDetailsDialog

@@ -59,6 +59,12 @@ When the browser exposes Chrome's built-in **Prompt API** (`window.LanguageModel
 - Accessible labels, live status messages, visible focus, 44 × 44 px minimum targets, and responsive layouts down to 320 px
 - Installable as an app, and fully usable offline once the catalog has been cached
 
+### Reaching Ozlorien Labs
+
+The footer credits Ozlorien Labs, and that credit opens a contact sheet: one open field for feedback on Emoji Compass or a request for a deep dive on a stock, plus an optional email address if the sender wants a reply. Submitting posts to the app's own `/api/feedback` route, which relays the note to `ozlorienlabs@gmail.com` and thanks the sender.
+
+This is the only part of the site that sends anything, and the modal says so. Everything else — searching, composing, favorites, preferences, and on-device polish — stays on the device.
+
 The family grid keeps browsing compact. Every nested variant remains reachable from details and through search.
 
 ## Quick start
@@ -161,9 +167,24 @@ This repository is ready for static Vercel hosting; deployment is intentionally 
 2. Choose the **Vite** framework preset.
 3. Use `npm run build` as the build command and `dist` as the output directory.
 4. Set the `VITE_GA_MEASUREMENT_ID` environment variable (optional, e.g. `G-XXXXXXXXXX`) for Google Analytics 4.
-5. Deploy from the desired branch.
+5. Set `RESEND_API_KEY` so the footer feedback form can deliver (see below).
+6. Deploy from the desired branch.
 
 `vercel.json` applies long-lived immutable caching to fingerprinted application assets, the versioned emoji catalog, and the self-hosted fonts; a bounded lifetime to icons; and `max-age=0, must-revalidate` to the service worker and manifest.
+
+## Feedback form configuration
+
+`api/feedback.ts` is a Vercel Function on the same origin as the app, so the browser never talks to a third party and the site's `connect-src 'self'` policy is unchanged. The Resend credential lives on the server and is never shipped to a client.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `RESEND_API_KEY` | yes | Resend API key used to send the note |
+| `FEEDBACK_TO` | no | Destination address; defaults to `ozlorienlabs@gmail.com` |
+| `FEEDBACK_FROM` | no | Verified sender; defaults to Resend's shared `onboarding@resend.dev` |
+
+Use a sender on a domain verified in Resend for production; the shared test sender only delivers to the address that owns the Resend account. When the sender supplies an email it becomes the message's `reply_to`, so replying from Gmail reaches them directly.
+
+Without `RESEND_API_KEY` the endpoint answers `503` and the modal tells the visitor that feedback is not configured yet, rather than silently discarding the note. The handler validates the payload independently of the browser, rejects oversized notes, and drops anything that fills its hidden honeypot field.
 
 ## Google Analytics (GA4) Configuration
 
@@ -177,6 +198,7 @@ Google Analytics 4 tracking is supported out-of-the-box using the standard Googl
    - On-device AI polish interactions
    - Category and content filter selections
    - Preference modifications
+   - Footer feedback submissions (whether an email was supplied, never its value or the note)
 3. If `VITE_GA_MEASUREMENT_ID` is omitted or empty, all analytics scripts and network calls remain inactive.
 
 ## Offline and installing

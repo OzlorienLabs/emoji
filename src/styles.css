@@ -1580,12 +1580,214 @@ a:hover {
 
 .site-footer {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
   padding: 0 0 clamp(150px, 18vh, 200px);
   color: rgb(var(--ec-ink-rgb) / var(--ec-a-body));
-  font-size: 12px;
-  gap: 10px 24px;
+  font-size: 13px;
+  gap: 4px;
+  text-align: center;
+}
+
+.site-footer__line {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.site-footer__link {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ec-link);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.site-footer__link:hover {
+  color: var(--ec-link-hover);
+  background: var(--ec-accent-fill);
+}
+
+/* -------------------------------------------------------- feedback sheet -- */
+
+.feedback-dialog {
+  position: fixed;
+  z-index: 55;
+  display: flex;
+  overflow-y: auto;
+  width: min(100% - 24px, 560px);
+  max-width: 100%;
+  max-height: min(88vh, 760px);
+  flex-direction: column;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid var(--ec-line-2);
+  border-radius: 26px;
+  margin: auto;
+  color: var(--ec-ink);
+  background: rgb(var(--ec-card-rgb) / 96%);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    0 40px 90px -30px rgb(var(--ec-shadow-rgb) / 70%),
+    inset 0 1px 0 var(--ec-line-2);
+  gap: 18px;
+  animation: ec-panel 0.32s var(--ec-ease) both;
+}
+
+.feedback-dialog::backdrop {
+  background: rgb(var(--ec-deep-rgb) / 66%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: ec-fade 0.22s ease both;
+}
+
+.feedback-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.feedback-dialog__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedback-dialog h2 {
+  margin: 0;
+  font-family: var(--ec-font-display);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.feedback-dialog__lede {
+  margin: 0;
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-mute));
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.feedback-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.field label {
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-strong));
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field__optional {
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-mute));
+  font-weight: 400;
+}
+
+.field__control {
+  padding: 12px 14px;
+  border: 1px solid var(--ec-line-2);
+  border-radius: 14px;
+  color: var(--ec-ink);
+  background: var(--ec-fill-2);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field__control::placeholder {
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-mute));
+}
+
+.field__control:focus {
+  border-color: rgb(255 138 92 / 60%);
+  box-shadow: 0 0 0 4px rgb(255 138 92 / 18%);
+}
+
+.field__control[aria-invalid="true"] {
+  border-color: var(--ec-toast-err-line);
+}
+
+.field__control:disabled {
+  opacity: 0.6;
+}
+
+.field__foot {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 11.5px;
+}
+
+.field__hint {
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-mute));
+  font-family: var(--ec-font-mono);
+}
+
+.field__error {
+  color: var(--ec-toast-err-text);
+  font-weight: 600;
+}
+
+.feedback-dialog__trap {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+}
+
+.feedback-dialog__failure {
+  padding: 11px 14px;
+  border: 1px solid var(--ec-toast-err-line);
+  border-radius: 14px;
+  margin: 0;
+  color: var(--ec-toast-err-text);
+  background: var(--ec-toast-err-bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.feedback-dialog__done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.feedback-dialog__done p {
+  margin: 0;
+  color: rgb(var(--ec-ink-rgb) / var(--ec-a-body));
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.feedback-dialog__mark {
+  font-family: var(--ec-font-emoji);
+  font-size: 40px;
+  line-height: 1;
 }
 
 /* ------------------------------------------------------- composer dock -- */
@@ -2254,11 +2456,13 @@ a:hover {
     background: rgb(var(--ec-panel-rgb));
   }
 
-  .details-dialog {
+  .details-dialog,
+  .feedback-dialog {
     background: rgb(var(--ec-card-rgb));
   }
 
-  .details-dialog::backdrop {
+  .details-dialog::backdrop,
+  .feedback-dialog::backdrop {
     background: rgb(var(--ec-deep-rgb) / 88%);
   }
 

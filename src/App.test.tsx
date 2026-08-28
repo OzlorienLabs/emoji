@@ -780,4 +780,66 @@ describe('Emoji Compass', () => {
       'AI polishing could not complete',
     );
   });
+
+  it('credits Ozlorien Labs in the footer and opens their contact sheet', async () => {
+    const user = userEvent.setup();
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 202 }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+
+    try {
+      render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+      expect(screen.getByText('Built with curiosity and care')).toBeInTheDocument();
+      expect(
+        screen.queryByText(/every sequence kept byte-exact/),
+      ).not.toBeInTheDocument();
+
+      const link = screen.getByRole('button', { name: 'Ozlorien Labs' });
+      expect(link).toHaveAttribute('aria-haspopup', 'dialog');
+      await user.click(link);
+
+      const sheet = screen.getByRole('dialog');
+      expect(sheet).toBeInTheDocument();
+
+      await user.type(
+        screen.getByRole('textbox', { name: 'What is on your mind?' }),
+        'Could you do a deep dive on $ACME?',
+      );
+      await user.type(screen.getByRole('textbox', { name: /^Email/ }), 'reader@example.com');
+      await user.click(screen.getByRole('button', { name: 'Send to Ozlorien Labs' }));
+
+      expect(await screen.findByRole('heading', { name: 'Thank you for reaching out' }))
+        .toBeInTheDocument();
+
+      const [url, init] = fetcher.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/feedback');
+      expect(JSON.parse(String(init.body))).toEqual({
+        message: 'Could you do a deep dive on $ACME?',
+        email: 'reader@example.com',
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Back to the emoji' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('closes the contact sheet with Escape before anything else', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'grinning');
+
+    await user.click(screen.getByRole('button', { name: 'Ozlorien Labs' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // The query is only cleared once nothing is layered over it.
+    expect(search).toHaveValue('grinning');
+  });
 });

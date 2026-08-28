@@ -24,7 +24,7 @@ The app uses original branding and native Unicode glyphs. It does not copy JoyPi
 - Plain CSS with semantic design tokens; no runtime UI framework, icon font, or ads
 - Display typography is self-hosted as committed woff2 subsets, so the running app makes no remote font request
 - Chrome's built-in Prompt API is used opportunistically for on-device message polish; the feature is absent, never degraded, when the API or the hardware is unavailable
-- Static Vercel deployment; no runtime API or database
+- Static Vercel deployment; the only server-side code is `api/feedback.ts`, a Vercel Function that relays the footer's contact form. No database.
 
 ## Data Contract
 
@@ -58,6 +58,7 @@ npm run preview
 public/data/             Generated, self-hosted Emoji 17 and Lucide catalogs
 public/fonts/            Generated, self-hosted variable woff2 subsets
 public/icons/            Generated PWA icon set
+api/                     Vercel Function relaying the footer's contact form
 public/sw.js             Offline caching for the shell, assets, and catalog
 scripts/                 Reproducible data generation, icon drawing, integrity checks
 src/components/          Focused React UI components and colocated tests
@@ -118,6 +119,7 @@ Gold queries include `blue heart`, `happy dance`, `love cat`, `doctor dark skin`
 - Size controls offer small, medium, and large. Render style offers native emoji and text presentation where the Unicode sequence supports it; copying always preserves the original fully-qualified glyph.
 - Favorites, recent items (48 most recent), size, style, tone, theme, quick-copy, and icon copy format are stored locally. Arbitrary composer text and search history are not persisted.
 - Details expose annotation, keywords, code points, group/subgroup, version, favorite action, up to 12 related items, and every valid variant. Keyword and tag pills re-run as searches.
+- The footer credits Ozlorien Labs, and that credit opens a contact sheet: one required open field for feedback or a stock deep-dive request, and an optional email address for a reply. It posts to the app's own origin, thanks the sender on success, keeps the draft and explains itself on failure, and is the only part of the product that transmits anything — which its own copy states.
 - On-device polish is offered only when the browser's built-in language model reports itself available. It preserves every emoji and icon token from the draft, is cancellable, and lands as a single undo entry.
 
 ## Visual and Responsive Contract
