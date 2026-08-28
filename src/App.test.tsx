@@ -22,7 +22,7 @@ describe('Emoji Compass', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Find the exact emoji you mean' }))
       .toBeInTheDocument();
     expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent(
-      '9Emoji sequences6Vector icons0Bytes sent to a server',
+      '6Emoji6Icons',
     );
 
     await user.type(screen.getByRole('searchbox'), 'blue heart');
@@ -148,7 +148,7 @@ describe('Emoji Compass', () => {
     await user.click(screen.getByRole('button', { name: 'Arrows & Navigation' }));
     expect(screen.getByRole('heading', { level: 2, name: 'Arrows & Navigation' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /Emoji \(/ }));
+    await user.click(screen.getByRole('tab', { name: 'Emoji' }));
     expect(screen.getByRole('button', { name: 'Smileys & emotion' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add grinning face' })).toBeVisible();
 
@@ -725,7 +725,7 @@ describe('Emoji Compass', () => {
       expect(screen.getByTestId('aurora').style.transform).toBe('');
 
       // Counters land on their totals immediately rather than rolling up.
-      expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent('9Emoji sequences');
+      expect(screen.getByLabelText('Catalog completeness')).toHaveTextContent('6Emoji');
 
       await user.click(screen.getByRole('button', { name: 'Add grinning face' }));
       expect(document.querySelector('.fly-ghost')).toBeNull();
@@ -940,7 +940,7 @@ describe('Emoji Compass', () => {
     expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
 
     // Switching to Emojis tab keeps Travel & Places selected and shows only emojis
-    await user.click(screen.getByRole('tab', { name: /Emoji \(/ }));
+    await user.click(screen.getByRole('tab', { name: 'Emoji' }));
     expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Add plane' })).not.toBeInTheDocument();

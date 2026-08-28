@@ -5,20 +5,22 @@ import type { ContentType } from '../data/catalog-types';
 import { ContentTypeFilter } from './ContentTypeFilter';
 
 describe('ContentTypeFilter', () => {
-  it('renders all, emoji, and icon options with counts', () => {
-    render(
+  it('renders all option with count, and emoji and icon options without count', () => {
+    const { container } = render(
       <ContentTypeFilter
         value="all"
         onChange={vi.fn()}
-        totalCount={5730}
-        emojiCount={3953}
-        iconCount={1777}
+        totalCount={3700}
       />,
     );
 
-    expect(screen.getByRole('tab', { name: 'All (5,730)' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: 'Emoji (3,953)' })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('tab', { name: 'Icons (1,777)' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'All (3,700)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Emoji' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'Icons' })).toHaveAttribute('aria-selected', 'false');
+
+    const counts = container.querySelectorAll('.content-type-filter__count');
+    expect(counts).toHaveLength(1);
+    expect(counts[0]).toHaveTextContent('3,700');
   });
 
   it('calls onChange when clicking a tab', async () => {

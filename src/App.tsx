@@ -504,13 +504,13 @@ function EmojiExperience({
   ]);
 
   const [shownCounts, setShownCounts] = useState({
-    emoji: catalog.totalCount,
+    emoji: catalog.emojis.length,
     icon: iconCatalog.totalCount,
   });
 
   useEffect(() => {
     const cancelEmoji = countUp(
-      catalog.totalCount,
+      catalog.emojis.length,
       (value) => setShownCounts((current) => ({ ...current, emoji: value })),
       { enabled: !reducedMotion },
     );
@@ -523,7 +523,7 @@ function EmojiExperience({
       cancelEmoji();
       cancelIcon();
     };
-  }, [catalog.totalCount, iconCatalog.totalCount, reducedMotion]);
+  }, [catalog.emojis.length, iconCatalog.totalCount, reducedMotion]);
 
   useEffect(() => () => manualCleanup.current?.(), []);
 
@@ -652,7 +652,7 @@ function EmojiExperience({
       ? 'Open any tile’s details and star it to pin it here.'
       : 'Use an emoji or icon once and it shows up in this list.';
 
-  const totalCombinedCount = catalog.totalCount + iconCatalog.totalCount;
+  const totalCombinedCount = catalog.emojis.length + iconCatalog.icons.length;
 
   /*
    * The denominator of "showing n of m" is the pool the current filter and
@@ -745,9 +745,8 @@ function EmojiExperience({
           ideas={SEARCH_SUGGESTIONS}
           onIdea={runSearch}
           stats={[
-            { value: shownCounts.emoji.toLocaleString('en-US'), label: 'Emoji sequences' },
-            { value: shownCounts.icon.toLocaleString('en-US'), label: 'Vector icons' },
-            { value: '0', label: 'Bytes sent to a server' },
+            { value: shownCounts.emoji.toLocaleString('en-US'), label: 'Emoji' },
+            { value: shownCounts.icon.toLocaleString('en-US'), label: 'Icons' },
           ]}
           searchSlot={
             <SearchBar
@@ -777,8 +776,6 @@ function EmojiExperience({
                 trackContentTypeChange(next);
               }}
               totalCount={totalCombinedCount}
-              emojiCount={catalog.totalCount}
-              iconCount={iconCatalog.totalCount}
             />
             <CategoryNav
               categories={categories}

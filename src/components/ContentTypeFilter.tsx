@@ -34,8 +34,8 @@ export function ContentTypeFilter({
 
   const options: FilterOption[] = [
     { value: 'all', label: 'All', count: totalCount, icon: '✦' },
-    { value: 'emoji', label: 'Emoji', count: emojiCount, icon: '😀' },
-    { value: 'icon', label: 'Icons', count: iconCount, icon: '◆' },
+    { value: 'emoji', label: 'Emoji', icon: '😀' },
+    { value: 'icon', label: 'Icons', icon: '◆' },
   ];
 
   const movePill = useCallback(() => {
@@ -54,7 +54,7 @@ export function ContentTypeFilter({
     movePill();
     window.addEventListener('resize', movePill);
     return () => window.removeEventListener('resize', movePill);
-  }, [movePill, value, emojiCount, iconCount, totalCount]);
+  }, [movePill, value, totalCount]);
 
   return (
     <div
