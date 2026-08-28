@@ -830,6 +830,7 @@ describe('Emoji Compass', () => {
     try {
       render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
+      expect(screen.getByRole('separator')).toBeInTheDocument();
       expect(screen.getByText('Built with curiosity and care')).toBeInTheDocument();
       expect(
         screen.queryByText(/every sequence kept byte-exact/),

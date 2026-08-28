@@ -836,6 +836,7 @@ function EmojiExperience({
         </section>
 
         <footer className="site-footer shell-width">
+          <hr className="site-footer__divider" />
           <p className="site-footer__line">Built with curiosity and care</p>
           <p className="site-footer__line">
             by{' '}
