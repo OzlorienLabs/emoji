@@ -6,7 +6,7 @@ Emoji Compass is a fast, meaning-first emoji and icon finder. Search for an idea
 
 ### Release Version
 
-Release 1.5.1
+Release 1.5.2
 
 ## What it includes
 
