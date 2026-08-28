@@ -60,6 +60,7 @@ import {
 import { countUp, flyToDock, staggerGridCells } from './lib/motion';
 import type { EmojiPreferences, StorageLike } from './lib/preferences';
 import { createSearchIndex, searchItems } from './lib/search';
+import { categoryTitle, computeDocumentTitle } from './lib/seo';
 import { selectToneVariant } from './lib/variants';
 import { iconCatalogFixture } from './test/catalog-fixture';
 
@@ -126,21 +127,6 @@ function isEmojiVariant(item: unknown): item is EmojiVariant {
   return typeof item === 'object' && item !== null && 'glyph' in item;
 }
 
-function categoryTitle(
-  category: ActiveCategory,
-  contentType: ContentType,
-  categoryById: Map<string, ResolvedCategory>,
-): string {
-  if (category === 'favorites') return 'Your favorites';
-  if (category === 'recent') return 'Recently used';
-  if (category !== null) {
-    const cat = categoryById.get(String(category));
-    if (cat) return cat.label;
-  }
-  if (contentType === 'emoji') return 'Every emoji';
-  if (contentType === 'icon') return 'Every icon';
-  return 'Everything, ranked by meaning';
-}
 
 function LoadingView() {
   return (
@@ -410,7 +396,11 @@ function EmojiExperience({
       url.searchParams.delete('group');
     }
     window.history.replaceState(window.history.state, '', url);
-  }, [category, contentType, query]);
+
+    if (typeof document !== 'undefined') {
+      document.title = computeDocumentTitle(query, category, contentType, categoryById);
+    }
+  }, [category, categoryById, contentType, query]);
 
   const focusSearch = useCallback(() => {
     const input = searchRef.current;

@@ -1,0 +1,105 @@
+# Emoji Compass — Complete Reference for AI Agents & LLMs
+
+Website: https://emoji.ozlorienlabs.com
+Repository: https://github.com/OzlorienLabs/emoji
+Catalog Version: Unicode 17.0 (3,953 total entries) & Lucide 1.34 (1,777 vector icons)
+License: MIT
+
+---
+
+## Overview
+
+Emoji Compass is an open-source, client-side semantic search engine for emojis and vector icons. Designed for fast meaning-first discovery, users can type abstract feelings, slang, multi-word descriptions, or technical icon names and immediately receive ranked results.
+
+---
+
+## URL Query Schema for Agents
+
+AI agents, search assistants, and automated tools can generate URLs with query parameters:
+
+| Parameter | Type | Allowed Values | Description |
+|-----------|------|----------------|-------------|
+| `q` | string | up to 120 chars | Search query (e.g., `?q=mindblown`, `?q=red+heart`, `?q=download`) |
+| `type` | string | `all`, `emoji`, `icon` | Content filter. Default: `all` |
+| `group` | string | category slug (see below) | Filter to a specific combined or Unicode category |
+
+### Examples for Agent Recommendations:
+- Emoji-only search: `https://emoji.ozlorienlabs.com/?q=party&type=emoji`
+- Icon-only search: `https://emoji.ozlorienlabs.com/?q=settings&type=icon`
+- Food & drink category: `https://emoji.ozlorienlabs.com/?group=food-drink`
+- People & body category: `https://emoji.ozlorienlabs.com/?group=people-body`
+
+---
+
+## Unicode Emoji Categories (10 Groups)
+
+1. `smileys-emotion` (Face smiling, affectionate, concerned, negative, costumed, cat, etc.)
+2. `people-body` (Hand gestures, body parts, person roles, activities, family, skin tones)
+3. `animals-nature` (Mammals, birds, amphibians, reptiles, marine, bugs, plants, flowers)
+4. `food-drink` (Fruits, vegetables, prepared food, Asian food, desserts, drinks, tableware)
+5. `travel-places` (Vehicles, ground transport, water transport, air, places, hotel, time)
+6. `activities` (Sports, arts & crafts, awards, games)
+7. `objects` (Clothing, sound, music, phones, computer, tools, science, household, stationery)
+8. `symbols` (Transport signs, warning, religion, zodiac, AV symbols, gender, math, punctuation)
+9. `flags` (Flags of the world, pride flags, subdivisional flags)
+10. `component` (Skin tone modifiers, hair components)
+
+---
+
+## Lucide Vector Icon Categories (15 Groups)
+
+1. `communication` (Mail, messages, phone, chat, send, share, notifications)
+2. `media` (Play, pause, audio, video, volume, camera, image, music)
+3. `navigation` (Arrows, compass, map, directions, chevron, crosshair)
+4. `design` (Palette, crop, pen, brush, layers, ruler, grid)
+5. `shapes` (Square, circle, triangle, polygon, star, badge)
+6. `tools` (Wrench, hammer, settings, screwdriver, sliders)
+7. `commerce` (Shopping cart, credit card, wallet, tag, dollar, receipt)
+8. `devices` (Monitor, smartphone, laptop, tablet, tv, hard drive, cpu)
+9. `connectivity` (Wifi, bluetooth, cast, rss, cable, router)
+10. `files` (File, folder, archive, paperclip, trash, clipboard)
+11. `system` (Power, battery, lock, key, shield, terminal, database)
+12. `social` (Thumbs up, heart, share, users, bookmark, message circle)
+13. `weather` (Sun, moon, cloud, rain, wind, snowflake, thermometer)
+14. `nature` (Leaf, tree, flower, flame, droplet, mountain)
+15. `food` (Utensils, coffee, cup, pizza, cake, apple)
+
+---
+
+## Semantic Intent Aliases (Examples)
+
+Emoji Compass features 119 hand-curated conversational aliases containing over 330 colloquial and emotional terms:
+
+- `deadline` -> ⏳ Hourglass, ⏰ Alarm Clock, ⌛ Hourglass Done, 🗓️ Calendar
+- `happy dance` -> 💃 Woman Dancing, 🕺 Man Dancing, 🥳 Partying Face, ✨ Sparkles
+- `mindblown` -> 🤯 Exploding Head, 💥 Collision, 🌌 Milky Way
+- `work computer` -> 💻 Laptop, 🖥️ Desktop Computer, 🖱️ Mouse
+- `celebration` -> 🎉 Party Popper, 🎊 Confetti Ball, 🍾 Bottle with Popping Cork
+- `workout` -> 🏋️ Person Lifting Weights, 🏃 Person Running, 🚴 Person Biking
+- `congratulations` -> 🥂 Clinking Glasses, 👏 Clapping Hands, 💐 Bouquet
+- `tired` -> 🥱 Yawning Face, 😴 Sleeping Face, 😫 Tired Face
+- `brainstorm` -> 💡 Light Bulb, 🧠 Brain, ⚡ High Voltage
+
+---
+
+## Supported Output & Copy Formats
+
+### For Emojis:
+- Native UTF-8 Unicode characters (e.g. `❤️`, `✨`, `🤝🏽`)
+- Exact skin-tone variants (Light `🏻`, Medium-Light `🏼`, Medium `🏽`, Medium-Dark `🏾`, Dark `🏿`, and dual-tone sequences like `🫱🏻‍🫲🏿`)
+- Text presentation vs. Emoji presentation styles (VS15 `\uFE0E` / VS16 `\uFE0F`)
+
+### For Icons:
+- Clean SVG vector code: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">...</svg>`
+- React JSX component: `<Download size={24} strokeWidth={2} />`
+- HTML icon markup: `<i data-lucide="download"></i>`
+- Kebab-case icon identifier: `download`
+- Downloadable `.svg` file
+
+---
+
+## Architecture & Privacy Details
+
+- Client-side execution: The catalog and search indexes are cached via Service Worker and searched in-memory.
+- On-device AI: Message rewrites utilize the browser's local Prompt API (`window.ai.languageModel`). Text is never transmitted to external AI servers.
+- Accessible: Meets WCAG AA contrast standards, keyboard accessible (navigation via arrows, `/` for search, `Escape` to dismiss), full screen reader support.

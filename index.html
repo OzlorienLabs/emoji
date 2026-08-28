@@ -3,10 +3,93 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Emoji Compass — Search 3,900+ Emojis &amp; 1,700+ Vector Icons by Meaning</title>
     <meta
       name="description"
-      content="Find the right emoji by meaning, combine your favorites, and copy them instantly."
+      content="Search 3,950+ Unicode 17.0 emojis and 1,770+ Lucide vector icons by meaning, intent, or keywords. Copy emoji variants, SVG, JSX, or compose messages with on-device AI."
     />
+    <meta
+      name="keywords"
+      content="emoji search, emoji finder, emoji by meaning, unicode 17 emojis, lucide icons, vector icons, emoji copy paste, svg icons, emoji dictionary, developer icons, copy emoji, semantic emoji search"
+    />
+    <meta name="author" content="Ozlorien Labs" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://emoji.ozlorienlabs.com/" />
+
+    <!-- Open Graph / Facebook / LinkedIn / Discord -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Emoji Compass" />
+    <meta property="og:url" content="https://emoji.ozlorienlabs.com/" />
+    <meta property="og:title" content="Emoji Compass — Search 3,900+ Emojis &amp; 1,700+ Vector Icons by Meaning" />
+    <meta property="og:description" content="Search 3,950+ Unicode 17.0 emojis and 1,770+ Lucide vector icons by meaning, intent, or keywords. Copy emoji variants, SVG, JSX, or compose messages with on-device AI." />
+    <meta property="og:image" content="https://emoji.ozlorienlabs.com/og-image.png" />
+    <meta property="og:image:secure_url" content="https://emoji.ozlorienlabs.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Emoji Compass — Semantic Search for Emojis &amp; Vector Icons" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://emoji.ozlorienlabs.com/" />
+    <meta name="twitter:title" content="Emoji Compass — Search 3,900+ Emojis &amp; 1,700+ Vector Icons by Meaning" />
+    <meta name="twitter:description" content="Search 3,950+ Unicode 17.0 emojis and 1,770+ Lucide vector icons by meaning, intent, or keywords. Copy emoji variants, SVG, JSX, or compose messages." />
+    <meta name="twitter:image" content="https://emoji.ozlorienlabs.com/og-image.png" />
+    <meta name="twitter:image:alt" content="Emoji Compass — Semantic Search for Emojis &amp; Vector Icons" />
+
+    <!-- Structured Data: Schema.org WebSite & WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://emoji.ozlorienlabs.com/#website",
+          "url": "https://emoji.ozlorienlabs.com/",
+          "name": "Emoji Compass",
+          "description": "Meaning-first semantic search engine and dictionary for Unicode 17.0 emojis and Lucide vector icons.",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Ozlorien Labs",
+            "url": "https://emoji.ozlorienlabs.com"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://emoji.ozlorienlabs.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://emoji.ozlorienlabs.com/#app",
+          "name": "Emoji Compass",
+          "url": "https://emoji.ozlorienlabs.com/",
+          "applicationCategory": "UtilitiesApplication, DesignApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires JavaScript. Works on all modern desktop and mobile browsers.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "description": "Fast, privacy-first semantic search engine for 3,953 Unicode 17.0 emojis and 1,770+ Lucide vector icons. Copy raw Unicode, SVG, React JSX, or HTML.",
+          "featureList": [
+            "Multi-word semantic search across English CLDR names, keywords, and conversational aliases",
+            "3,953 ordered Unicode 17.0 emoji entries including 2,030 exact skin-tone variants",
+            "1,777 Lucide 1.34 vector icons across 15 categories",
+            "Export formats: raw Unicode, SVG, React JSX, and HTML icon markup",
+            "On-device message composer with Prompt API AI polishing",
+            "100% client-side privacy with offline PWA support"
+          ]
+        }
+      ]
+    }
+    </script>
+
     <meta name="theme-color" content="#f4efe5" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#07060c" media="(prefers-color-scheme: dark)" />
     <link
@@ -29,10 +112,44 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Emoji Compass" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Emoji Compass — Find the feeling</title>
   </head>
   <body>
-    <noscript>Emoji Compass needs JavaScript to search and copy emoji.</noscript>
+    <noscript>
+      <div style="font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1.5rem; line-height: 1.6; color: #1e1b26;">
+        <h1>Emoji Compass — Semantic Emoji &amp; Icon Finder</h1>
+        <p>
+          Emoji Compass is a fast, meaning-first search engine for 3,953 Unicode 17.0 emojis and 1,777 Lucide vector icons.
+          Search by feelings, intent, or keywords (such as &ldquo;happy dance&rdquo;, &ldquo;deadline&rdquo;, &ldquo;work computer&rdquo;, or &ldquo;red heart&rdquo;),
+          choose exact skin-tone variants, and copy raw Unicode strings or developer icon formats (SVG, JSX, HTML).
+        </p>
+        <h2>Browse Emoji &amp; Icon Categories</h2>
+        <ul>
+          <li><a href="/?group=smileys-emotion">Smileys &amp; Emotion</a></li>
+          <li><a href="/?group=people-body">People &amp; Body</a></li>
+          <li><a href="/?group=animals-nature">Animals &amp; Nature</a></li>
+          <li><a href="/?group=food-drink">Food &amp; Drink</a></li>
+          <li><a href="/?group=travel-places">Travel &amp; Places</a></li>
+          <li><a href="/?group=activities">Activities &amp; Sports</a></li>
+          <li><a href="/?group=objects">Objects &amp; Tools</a></li>
+          <li><a href="/?group=symbols">Symbols &amp; Signs</a></li>
+          <li><a href="/?group=flags">Flags</a></li>
+          <li><a href="/?group=communication">Communication Icons</a></li>
+          <li><a href="/?group=media">Media &amp; Audio Icons</a></li>
+          <li><a href="/?group=navigation">Navigation &amp; Arrows</a></li>
+          <li><a href="/?group=design">Design &amp; Creativity Icons</a></li>
+        </ul>
+        <h2>Popular Semantic Searches</h2>
+        <ul>
+          <li><a href="/?q=happy+dance">Happy Dance Emojis</a></li>
+          <li><a href="/?q=deadline">Deadline &amp; Urgency Emojis</a></li>
+          <li><a href="/?q=celebration">Celebration Emojis</a></li>
+          <li><a href="/?q=mindblown">Mindblown Emojis</a></li>
+          <li><a href="/?q=red+heart">Heart Emojis</a></li>
+          <li><a href="/?q=download">Download &amp; Cloud Icons</a></li>
+        </ul>
+        <p><em>Please enable JavaScript to use interactive search, instant clipboard copy, variant selection, and on-device AI composition.</em></p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

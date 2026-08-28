@@ -53,7 +53,16 @@ export function SearchBar({
   const countText = loading ? 'loading…' : formatMatchCount(resultCount);
 
   return (
-    <form className="search-bar" role="search" onSubmit={handleSubmit}>
+    <form
+      className="search-bar"
+      role="search"
+      action="/"
+      method="get"
+      toolname="search-emojis-and-icons"
+      tooldescription="Search Unicode 17.0 emojis and Lucide vector icons by semantic meaning, emotion, keyword, or name"
+      toolautosubmit="true"
+      onSubmit={handleSubmit}
+    >
       <label className="search-bar__label" htmlFor={inputId}>
         {label}
       </label>
@@ -62,6 +71,7 @@ export function SearchBar({
         <input
           ref={inputRef}
           id={inputId}
+          name="q"
           className="search-bar__input"
           type="search"
           value={value}
@@ -71,6 +81,7 @@ export function SearchBar({
           spellCheck="false"
           aria-controls={resultsId}
           aria-describedby={statusId}
+          toolparamdescription="Search query, e.g. 'happy dance', 'deadline', 'heart', 'download icon'"
           onChange={(event) => onChange(event.currentTarget.value)}
         />
         {value ? (

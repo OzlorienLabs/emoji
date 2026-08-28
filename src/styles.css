@@ -1171,6 +1171,17 @@ a.brand-mark:active {
     inset 0 1px 0 var(--ec-line-2);
 }
 
+@supports selector(:tool-form-active) {
+  .search-bar:tool-form-active .search-bar__field {
+    border-color: rgb(255 138 92 / 60%);
+    background: var(--ec-fill-2);
+    box-shadow:
+      0 26px 60px -26px rgb(var(--ec-shadow-rgb) / 60%),
+      0 0 0 4px rgb(255 138 92 / 18%),
+      inset 0 1px 0 var(--ec-line-2);
+  }
+}
+
 .search-bar__icon {
   flex: 0 0 auto;
   font-size: 18px;
