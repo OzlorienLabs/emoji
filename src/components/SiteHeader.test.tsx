@@ -16,7 +16,11 @@ describe('SiteHeader', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'Emoji Compass home' })).toBeInTheDocument();
+    const homeLink = screen.getByRole('link', { name: 'Emoji Compass home' });
+    expect(homeLink).toBeInTheDocument();
+    expect(homeLink).toHaveClass('brand-mark');
+    expect(screen.getByText('Emoji Compass')).toBeInTheDocument();
+    expect(screen.queryByText('Meaning-first picker')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Switch to night' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open preferences' })).toBeInTheDocument();
 

@@ -25,13 +25,14 @@ export function SiteHeader({
 
   return (
     <header className="site-header">
-      <a className="brand" href="/" aria-label="Emoji Compass home">
-        <span className="brand-mark" aria-hidden="true">🧭</span>
+      <div className="brand">
+        <a className="brand-mark" href="/" aria-label="Emoji Compass home">
+          <span aria-hidden="true">🧭</span>
+        </a>
         <span className="brand__text">
           <span className="brand__name">Emoji Compass</span>
-          <span className="brand__tag">Meaning-first picker</span>
         </span>
-      </a>
+      </div>
 
       <div className="header-spacer" />
 
