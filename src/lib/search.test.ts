@@ -182,6 +182,13 @@ describe('icon searching', () => {
     const arrowsOnly = searchItems(combinedIndex, 'arrow', { contentType: 'icon', group: 'arrows', limit: 10 });
     expect(arrowsOnly.length).toBeGreaterThan(0);
     expect(arrowsOnly.every(({ item }) => 'category' in item && item.category === 'arrows')).toBe(true);
+
+    const combinedGroupResults = searchItems(combinedIndex, 'heart', {
+      group: [7, 'communication'],
+      limit: 20,
+    });
+    expect(combinedGroupResults.some(({ item }) => !('nodes' in item))).toBe(true);
+    expect(combinedGroupResults.some(({ item }) => 'nodes' in item)).toBe(true);
   });
 
   it('tolerates minor typos when searching icons', () => {

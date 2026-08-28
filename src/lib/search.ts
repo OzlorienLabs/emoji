@@ -36,7 +36,7 @@ export type EmojiSearchIndex = ItemSearchIndex;
 
 export interface ItemSearchOptions {
   contentType?: ContentType;
-  group?: number | string;
+  group?: number | string | readonly (number | string)[];
   includeVariants?: boolean;
   limit?: number;
 }
@@ -311,7 +311,8 @@ export function searchItems(
   rawQuery: string,
   options: ItemSearchOptions = {},
 ): ItemSearchResult[] {
-  const cacheKey = `${rawQuery}\0${options.contentType ?? 'all'}\0${options.group ?? ''}\0${options.includeVariants ?? false}\0${options.limit ?? ''}`;
+  const groupKey = Array.isArray(options.group) ? options.group.join(',') : (options.group ?? '');
+  const cacheKey = `${rawQuery}\0${options.contentType ?? 'all'}\0${groupKey}\0${options.includeVariants ?? false}\0${options.limit ?? ''}`;
   const cached = getCached(index, cacheKey);
   if (cached) {
     return cached;
@@ -323,11 +324,16 @@ export function searchItems(
 
   const contentType = options.contentType ?? 'all';
   const groupFilter = options.group;
+  const isGroupAllowed = (docGroup: number | string): boolean => {
+    if (groupFilter === undefined) return true;
+    if (Array.isArray(groupFilter)) return groupFilter.includes(docGroup);
+    return docGroup === groupFilter;
+  };
 
   const eligibleDocuments = index.documents.filter((doc) => {
     if (contentType === 'emoji' && doc.kind !== 'emoji') return false;
     if (contentType === 'icon' && doc.kind !== 'icon') return false;
-    if (groupFilter !== undefined && doc.group !== groupFilter) return false;
+    if (!isGroupAllowed(doc.group)) return false;
     return true;
   });
 

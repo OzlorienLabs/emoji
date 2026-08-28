@@ -20,6 +20,12 @@ import { SearchBar } from './components/SearchBar';
 import { SiteHeader } from './components/SiteHeader';
 import { Toast } from './components/Toast';
 import { flattenCatalog, flattenIconCatalog, getIconHtml, getIconJsx, getIconSvg } from './data/catalog';
+import {
+  filterCategoriesForContentType,
+  resolveCategories,
+  resolveCategoryId,
+  type ResolvedCategory,
+} from './data/categories';
 import type {
   ContentType,
   EmojiCatalog,
@@ -76,18 +82,6 @@ interface EmojiExperienceProps extends Omit<AppProps, 'initialCatalog' | 'initia
   iconCatalog: IconCatalog;
 }
 
-const GROUP_ICONS: Readonly<Record<string, string>> = {
-  'smileys-emotion': '😀',
-  'people-body': '👋',
-  component: '🏻',
-  'animals-nature': '🌿',
-  'food-drink': '🍓',
-  'travel-places': '🚀',
-  activities: '⚽',
-  objects: '💡',
-  symbols: '❤️',
-  flags: '🏳️',
-};
 
 const SEARCH_SUGGESTIONS = [
   'blue heart',
@@ -104,8 +98,7 @@ const SEARCH_SUGGESTIONS = [
 const TOAST_MS = { success: 2600, error: 5000 } as const;
 
 function readInitialUrl(
-  catalog: EmojiCatalog,
-  iconCatalog: IconCatalog,
+  resolvedCategories: readonly ResolvedCategory[],
 ): { query: string; contentType: ContentType; category: ActiveCategory } {
   const parameters = new URLSearchParams(window.location.search);
   const query = parameters.get('q')?.slice(0, 120) ?? '';
@@ -116,16 +109,7 @@ function readInitialUrl(
       : 'all';
 
   const groupParameter = parameters.get('group');
-  let category: ActiveCategory = null;
-
-  if (groupParameter !== null) {
-    const numericGroup = Number(groupParameter);
-    if (Number.isInteger(numericGroup) && catalog.groups.some(({ id }) => id === numericGroup)) {
-      category = numericGroup;
-    } else if (iconCatalog.categories.some(({ id }) => id === groupParameter)) {
-      category = groupParameter;
-    }
-  }
+  const category = resolveCategoryId(groupParameter, resolvedCategories);
 
   return { query, contentType, category };
 }
@@ -146,16 +130,13 @@ function isEmojiVariant(item: unknown): item is EmojiVariant {
 function categoryTitle(
   category: ActiveCategory,
   contentType: ContentType,
-  catalog: EmojiCatalog,
-  iconCatalog: IconCatalog,
+  categoryById: Map<string, ResolvedCategory>,
 ): string {
   if (category === 'favorites') return 'Your favorites';
   if (category === 'recent') return 'Recently used';
-  if (typeof category === 'number') {
-    return catalog.groups.find(({ id }) => id === category)?.label ?? 'Emoji';
-  }
-  if (typeof category === 'string') {
-    return iconCatalog.categories.find(({ id }) => id === category)?.label ?? 'Icons';
+  if (category !== null) {
+    const cat = categoryById.get(String(category));
+    if (cat) return cat.label;
   }
   if (contentType === 'emoji') return 'Every emoji';
   if (contentType === 'icon') return 'Every icon';
@@ -203,7 +184,37 @@ function EmojiExperience({
   copy = copyText,
   customLanguageModel,
 }: EmojiExperienceProps) {
-  const initialUrl = useMemo(() => readInitialUrl(catalog, iconCatalog), [catalog, iconCatalog]);
+  const resolvedCategories = useMemo(
+    () => resolveCategories(catalog, iconCatalog),
+    [catalog, iconCatalog],
+  );
+  const categoryById = useMemo(
+    () => new Map(resolvedCategories.map((cat) => [cat.id, cat])),
+    [resolvedCategories],
+  );
+  const categoryByEmojiGroupId = useMemo(() => {
+    const map = new Map<number, ResolvedCategory>();
+    for (const cat of resolvedCategories) {
+      for (const gid of cat.emojiGroupIds) {
+        map.set(gid, cat);
+      }
+    }
+    return map;
+  }, [resolvedCategories]);
+  const categoryByIconId = useMemo(() => {
+    const map = new Map<string, ResolvedCategory>();
+    for (const cat of resolvedCategories) {
+      for (const cid of cat.iconCategoryIds) {
+        map.set(cid, cat);
+      }
+    }
+    return map;
+  }, [resolvedCategories]);
+
+  const initialUrl = useMemo(
+    () => readInitialUrl(resolvedCategories),
+    [resolvedCategories],
+  );
   const [query, setQuery] = useState(initialUrl.query);
   const deferredQuery = useDeferredValue(query);
   const [contentType, setContentType] = useState<ContentType>(initialUrl.contentType);
@@ -297,14 +308,26 @@ function EmojiExperience({
     [catalog],
   );
 
+  const resolvedActiveCategory = useMemo(() => {
+    if (!category || category === 'favorites' || category === 'recent') return null;
+    return categoryById.get(String(category)) ?? null;
+  }, [category, categoryById]);
+
   const resultItems = useMemo<readonly EmojiGridItem[]>(() => {
     let items: readonly EmojiGridItem[];
     const normalizedQuery = deferredQuery.trim();
 
     if (normalizedQuery) {
+      const searchGroupFilter =
+        category === 'favorites' || category === 'recent'
+          ? undefined
+          : resolvedActiveCategory
+            ? [...resolvedActiveCategory.emojiGroupIds, ...resolvedActiveCategory.iconCategoryIds]
+            : category ?? undefined;
+
       items = searchItems(searchIndex, normalizedQuery, {
         contentType,
-        group: category === 'favorites' || category === 'recent' ? undefined : category ?? undefined,
+        group: searchGroupFilter,
       }).map(({ item }) => {
         if (isIconItem(item)) return item;
         const family = familyById.get(item.familyId);
@@ -319,10 +342,14 @@ function EmojiExperience({
         if (icon) return [icon];
         return [];
       });
-    } else if (typeof category === 'number') {
-      items = catalog.emojis.filter((family) => family.group === category);
-    } else if (typeof category === 'string') {
-      items = iconCatalog.icons.filter((icon) => icon.category === category);
+    } else if (resolvedActiveCategory) {
+      const matchingEmojis = contentType !== 'icon'
+        ? catalog.emojis.filter((family) => resolvedActiveCategory.emojiGroupIds.includes(family.group))
+        : [];
+      const matchingIcons = contentType !== 'emoji'
+        ? iconCatalog.icons.filter((icon) => resolvedActiveCategory.iconCategoryIds.includes(icon.category))
+        : [];
+      items = [...matchingEmojis, ...matchingIcons];
     } else if (contentType === 'emoji') {
       items = catalog.emojis;
     } else if (contentType === 'icon') {
@@ -348,45 +375,26 @@ function EmojiExperience({
     iconCatalog.icons,
     preferences.favoriteIds,
     preferences.recentIds,
+    resolvedActiveCategory,
     searchIndex,
   ]);
 
-  const categories = useMemo<readonly CategoryOption[]>(() => {
-    const list: CategoryOption[] = [
-      { id: 'favorites', label: 'Favorites', icon: '★' },
-      { id: 'recent', label: 'Recently used', icon: '↺' },
-    ];
-
-    if (contentType === 'emoji' || contentType === 'all') {
-      for (const group of catalog.groups) {
-        list.push({
-          id: group.id,
-          label: group.label,
-          icon: GROUP_ICONS[group.key] ?? '•',
-        });
-      }
-    }
-
-    if (contentType === 'icon' || contentType === 'all') {
-      for (const iconCat of iconCatalog.categories) {
-        list.push({
-          id: iconCat.id,
-          label: iconCat.label,
-          icon: iconCat.icon ?? '⚡',
-        });
-      }
-    }
-
-    return list;
-  }, [catalog.groups, contentType, iconCatalog.categories]);
+  const categories = useMemo<readonly CategoryOption[]>(
+    () => filterCategoriesForContentType(resolvedCategories, contentType),
+    [resolvedCategories, contentType],
+  );
 
   const categoryLabelFor = useCallback(
     (item: EmojiGridItem): string => {
-      if (isIconItem(item)) return item.categoryLabel;
+      if (isIconItem(item)) {
+        const cat = categoryByIconId.get(item.category);
+        return cat?.label ?? item.categoryLabel;
+      }
       const group = (item as EmojiFamily).group;
-      return groupById.get(group) ?? 'Emoji';
+      const cat = categoryByEmojiGroupId.get(group);
+      return cat?.label ?? groupById.get(group) ?? 'Emoji';
     },
-    [groupById],
+    [categoryByEmojiGroupId, categoryByIconId, groupById],
   );
 
   useEffect(() => {
@@ -626,7 +634,7 @@ function EmojiExperience({
   const trimmedQuery = query.trim();
   const resultTitle = trimmedQuery
     ? `Matches for “${trimmedQuery}”`
-    : categoryTitle(category, contentType, catalog, iconCatalog);
+    : categoryTitle(category, contentType, categoryById);
   const resultKicker = trimmedQuery
     ? 'Best semantic matches'
     : category !== null
@@ -655,11 +663,14 @@ function EmojiExperience({
   const poolTotal = useMemo(() => {
     if (category === 'favorites') return preferences.favoriteIds.length;
     if (category === 'recent') return preferences.recentIds.length;
-    if (typeof category === 'number') {
-      return catalog.emojis.filter((family) => family.group === category).length;
-    }
-    if (typeof category === 'string') {
-      return iconCatalog.icons.filter((icon) => icon.category === category).length;
+    if (resolvedActiveCategory) {
+      const emojiCount = contentType !== 'icon'
+        ? catalog.emojis.filter((family) => resolvedActiveCategory.emojiGroupIds.includes(family.group)).length
+        : 0;
+      const iconCount = contentType !== 'emoji'
+        ? iconCatalog.icons.filter((icon) => resolvedActiveCategory.iconCategoryIds.includes(icon.category)).length
+        : 0;
+      return emojiCount + iconCount;
     }
     if (contentType === 'emoji') return catalog.emojis.length;
     if (contentType === 'icon') return iconCatalog.icons.length;
@@ -671,6 +682,7 @@ function EmojiExperience({
     iconCatalog.icons,
     preferences.favoriteIds.length,
     preferences.recentIds.length,
+    resolvedActiveCategory,
   ]);
 
   const ideaChips = (
@@ -755,7 +767,14 @@ function EmojiExperience({
               value={contentType}
               onChange={(next) => {
                 setContentType(next);
-                setCategory(null);
+                setCategory((current) => {
+                  if (!current || current === 'favorites' || current === 'recent') return current;
+                  const cat = categoryById.get(String(current));
+                  if (!cat) return null;
+                  if (next === 'emoji' && !cat.hasEmojis) return null;
+                  if (next === 'icon' && !cat.hasIcons) return null;
+                  return current;
+                });
                 trackContentTypeChange(next);
               }}
               totalCount={totalCombinedCount}

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClipboardResult } from './lib/clipboard';
 import { createDefaultPreferences } from './lib/preferences';
+import type { EmojiCatalog, IconCatalog } from './data/catalog-types';
 import { catalogFixture, iconCatalogFixture } from './test/catalog-fixture';
 import { App } from './App';
 
@@ -875,5 +876,144 @@ describe('Emoji Compass', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     // The query is only cleared once nothing is layered over it.
     expect(search).toHaveValue('grinning');
+  });
+
+  it('combines emojis and icons under shared category filters like Travel & Places', async () => {
+    const user = userEvent.setup();
+    const travelCatalog: EmojiCatalog = {
+      ...catalogFixture,
+      groups: [
+        ...catalogFixture.groups,
+        { id: 5, key: 'travel-places', label: 'Travel & places' },
+      ],
+      emojis: [
+        ...catalogFixture.emojis,
+        {
+          id: '1F680',
+          glyph: '🚀',
+          name: 'rocket',
+          order: 10,
+          version: 0.6,
+          shortcodes: ['rocket'],
+          group: 5,
+          subgroup: 0,
+          keywords: ['travel', 'space', 'rocket'],
+          variants: [],
+        },
+      ],
+    };
+    const travelIconCatalog: IconCatalog = {
+      ...iconCatalogFixture,
+      categories: [
+        ...iconCatalogFixture.categories,
+        { id: 'travel', label: 'Travel & Places', icon: '🚀', count: 1 },
+      ],
+      icons: [
+        ...iconCatalogFixture.icons,
+        {
+          id: 'plane',
+          name: 'plane',
+          kebabName: 'plane',
+          pascalName: 'Plane',
+          category: 'travel',
+          categoryLabel: 'Travel & Places',
+          tags: ['flight', 'travel', 'airplane'],
+          nodes: [['path', { d: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z' }]],
+          order: 7,
+        },
+      ],
+    };
+
+    render(<App initialCatalog={travelCatalog} initialIconCatalog={travelIconCatalog} />);
+
+    // In All mode, clicking Travel & Places displays both emojis and icons
+    const travelChip = screen.getByRole('button', { name: 'Travel & Places' });
+    expect(travelChip).toBeInTheDocument();
+    await user.click(travelChip);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Travel & Places' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
+
+    // Switching to Emojis tab keeps Travel & Places selected and shows only emojis
+    await user.click(screen.getByRole('tab', { name: /Emoji \(/ }));
+    expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Add plane' })).not.toBeInTheDocument();
+
+    // Switching to Icons tab keeps Travel & Places selected and shows only icons
+    await user.click(screen.getByRole('tab', { name: /Icons/ }));
+    expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Add rocket' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
+
+    // Switching back to All shows both
+    await user.click(screen.getByRole('tab', { name: /All/ }));
+    expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
+
+    // Searching while Travel & Places is selected searches within both emojis and icons
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'travel');
+    expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
+  });
+
+  it('activates combined category from shareable URL with group=travel or group=5', async () => {
+    const travelCatalog: EmojiCatalog = {
+      ...catalogFixture,
+      groups: [
+        ...catalogFixture.groups,
+        { id: 5, key: 'travel-places', label: 'Travel & places' },
+      ],
+      emojis: [
+        ...catalogFixture.emojis,
+        {
+          id: '1F680',
+          glyph: '🚀',
+          name: 'rocket',
+          order: 10,
+          version: 0.6,
+          shortcodes: ['rocket'],
+          group: 5,
+          subgroup: 0,
+          keywords: ['travel'],
+          variants: [],
+        },
+      ],
+    };
+    const travelIconCatalog: IconCatalog = {
+      ...iconCatalogFixture,
+      categories: [
+        ...iconCatalogFixture.categories,
+        { id: 'travel', label: 'Travel & Places', icon: '🚀', count: 1 },
+      ],
+      icons: [
+        ...iconCatalogFixture.icons,
+        {
+          id: 'plane',
+          name: 'plane',
+          kebabName: 'plane',
+          pascalName: 'Plane',
+          category: 'travel',
+          categoryLabel: 'Travel & Places',
+          tags: ['travel'],
+          nodes: [['path', { d: 'M12 2v20' }]],
+          order: 7,
+        },
+      ],
+    };
+
+    window.history.replaceState({}, '', '/?group=travel');
+    const { unmount } = render(<App initialCatalog={travelCatalog} initialIconCatalog={travelIconCatalog} />);
+    expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('heading', { level: 2, name: 'Travel & Places' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add rocket' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add plane' })).toBeVisible();
+    unmount();
+
+    window.history.replaceState({}, '', '/?group=5');
+    render(<App initialCatalog={travelCatalog} initialIconCatalog={travelIconCatalog} />);
+    expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
