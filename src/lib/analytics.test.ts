@@ -82,9 +82,24 @@ describe('analytics module', () => {
       expect(window.dataLayer).toBeDefined();
       expect(typeof window.gtag).toBe('function');
 
-      // Call the default window.gtag function to ensure it pushes into dataLayer
+      // gtag.js only executes dataLayer entries that are `arguments` objects; a
+      // plain array is skipped, which is what silently disabled every hit.
       window.gtag?.('event', 'manual_test', { key: 'val' });
-      expect(window.dataLayer?.some((entry) => Array.isArray(entry) && entry[1] === 'manual_test')).toBe(true);
+      const entries = window.dataLayer ?? [];
+      expect(entries.every((entry) => Object.prototype.toString.call(entry) === '[object Arguments]')).toBe(true);
+      expect(entries.some((entry) => Array.isArray(entry))).toBe(false);
+      expect(
+        entries.some((entry) => Array.from(entry as IArguments)[1] === 'manual_test'),
+      ).toBe(true);
+
+      // The `js` and `config` bootstrap commands must reach the queue too.
+      expect(entries.some((entry) => Array.from(entry as IArguments)[0] === 'js')).toBe(true);
+      expect(
+        entries.some((entry) => {
+          const command = Array.from(entry as IArguments);
+          return command[0] === 'config' && command[1] === 'G-TEST12345';
+        }),
+      ).toBe(true);
     });
 
     it('preserves existing window.gtag function if already defined before initAnalytics', () => {
@@ -139,17 +154,21 @@ describe('analytics module', () => {
       const gtagSpy = vi.fn();
       window.gtag = gtagSpy;
 
+      // GA4 ignores a repeated `config` for a configured stream, so manual page
+      // views must be sent as `page_view` events.
       trackPageView('/search?q=smile', 'Emoji Compass — Search');
-      expect(gtagSpy).toHaveBeenCalledWith('config', 'G-TRACKTEST', {
+      expect(gtagSpy).toHaveBeenCalledWith('event', 'page_view', {
         page_path: '/search?q=smile',
         page_title: 'Emoji Compass — Search',
+        page_location: window.location.href,
       });
 
       // Default arguments
       trackPageView();
-      expect(gtagSpy).toHaveBeenCalledWith('config', 'G-TRACKTEST', {
+      expect(gtagSpy).toHaveBeenCalledWith('event', 'page_view', {
         page_path: window.location.pathname + window.location.search,
         page_title: document.title,
+        page_location: window.location.href,
       });
     });
 
@@ -174,9 +193,10 @@ describe('analytics module', () => {
       window.GA_MEASUREMENT_ID = 'G-FALLBACK';
 
       trackPageView('/fallback-path', 'Fallback Title');
-      expect(gtagSpy).toHaveBeenCalledWith('config', 'G-FALLBACK', {
+      expect(gtagSpy).toHaveBeenCalledWith('event', 'page_view', {
         page_path: '/fallback-path',
         page_title: 'Fallback Title',
+        page_location: window.location.href,
       });
     });
 

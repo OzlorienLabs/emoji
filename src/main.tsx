@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -14,9 +15,13 @@ if (!root) {
   throw new Error('Root element was not found');
 }
 
+// Vercel Web Analytics rides alongside the app rather than inside it: on Vercel
+// it self-hosts from /_vercel/insights, so no third-party origin is involved and
+// the CSP stays as tight as it was.
 createRoot(root).render(
   <StrictMode>
     <App />
+    <Analytics />
   </StrictMode>,
 );
 

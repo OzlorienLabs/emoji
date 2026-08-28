@@ -115,6 +115,13 @@ describe('service worker', () => {
   it('serves the self-hosted fonts cache-first so the shell works offline', () => {
     expect(serviceWorker).toContain("'/fonts/'");
   });
+
+  it('leaves Vercel Web Analytics to the network instead of caching it', () => {
+    expect(serviceWorker).toContain("const BYPASS_PREFIXES = ['/_vercel/'];");
+    expect(serviceWorker).toContain(
+      'if (BYPASS_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return;',
+    );
+  });
 });
 
 describe('hosting configuration', () => {

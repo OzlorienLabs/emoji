@@ -4,7 +4,7 @@
  * The build emits content-hashed asset names, so there is no build-time
  * precache manifest: the shell is cached on install and hashed assets are
  * cached as they are first requested. Only same-origin GET requests are
- * handled; the app makes no third-party requests.
+ * handled; analytics beacons are left to the network untouched.
  */
 
 const VERSION = 'v1';
@@ -14,6 +14,9 @@ const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE]);
 
 /** Paths whose contents are immutable for a given URL, so cache-first is safe. */
 const IMMUTABLE_PREFIXES = ['/assets/', '/icons/', '/data/', '/fonts/'];
+
+/** Vercel Web Analytics is same-origin but must never be served from a cache. */
+const BYPASS_PREFIXES = ['/_vercel/'];
 
 const SHELL_URLS = ['/', '/manifest.webmanifest'];
 
@@ -76,6 +79,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (BYPASS_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, '/'));

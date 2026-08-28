@@ -169,7 +169,8 @@ This repository is ready for static Vercel hosting; deployment is intentionally 
 3. Use `npm run build` as the build command and `dist` as the output directory.
 4. Set the `VITE_GA_MEASUREMENT_ID` environment variable (optional, e.g. `G-XXXXXXXXXX`) for Google Analytics 4.
 5. Set `RESEND_API_KEY` so the footer feedback form can deliver (see below).
-6. Deploy from the desired branch.
+6. Turn on **Analytics** in the project for Vercel Web Analytics (no key required).
+7. Deploy from the desired branch.
 
 `vercel.json` applies long-lived immutable caching to fingerprinted application assets, the versioned emoji catalog, and the self-hosted fonts; a bounded lifetime to icons; and `max-age=0, must-revalidate` to the service worker and manifest.
 
@@ -201,6 +202,24 @@ Google Analytics 4 tracking is supported out-of-the-box using the standard Googl
    - Preference modifications
    - Footer feedback submissions (whether an email was supplied, never its value or the note)
 3. If `VITE_GA_MEASUREMENT_ID` is omitted or empty, all analytics scripts and network calls remain inactive.
+
+The `gtag` shim pushes an `arguments` object into `dataLayer`, exactly as Google's
+official snippet does. This is load-bearing rather than stylistic: `gtag.js` only
+executes a queue entry it recognises as an `arguments` object, and treats a plain
+array as inert data. Pushing an array leaves the stream unconfigured and drops
+every hit without an error, so `src/lib/analytics.test.ts` asserts the queue shape.
+
+## Vercel Web Analytics
+
+[Vercel Web Analytics](https://vercel.com/docs/analytics) runs alongside GA4 and needs
+no key. Enable **Analytics** in the Vercel project, then redeploy — `<Analytics />`
+from `@vercel/analytics/react` is already mounted in `src/main.tsx`.
+
+On Vercel the script self-hosts from `/_vercel/insights/script.js` and beacons back to
+the same origin, so `script-src 'self'` and `connect-src 'self'` already cover it and
+the content security policy is unchanged. Locally the package detects a non-production
+environment and only logs to the console, sending nothing. The service worker skips
+`/_vercel/` outright so analytics is never served from a cache.
 
 ## Offline and installing
 

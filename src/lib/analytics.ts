@@ -46,11 +46,18 @@ export function initAnalytics(customId?: string): boolean {
     return true;
   }
 
-  // Setup dataLayer and gtag function
+  // Setup dataLayer and gtag function.
+  //
+  // gtag.js walks the dataLayer and only treats an entry as a command when it is
+  // an `arguments` object; a plain array is read as an inert data push and
+  // skipped. Pushing `args` as an array therefore swallowed `js` and `config`,
+  // left the stream unconfigured, and silently sent nothing. Keep the shim in
+  // the canonical `dataLayer.push(arguments)` form.
   window.dataLayer = window.dataLayer || [];
   if (typeof window.gtag !== 'function') {
-    window.gtag = function (...args: unknown[]) {
-      window.dataLayer?.push(args);
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params -- rest params build a plain array, which is the bug.
+      window.dataLayer?.push(arguments);
     };
   }
 
@@ -94,12 +101,16 @@ export function trackPageView(pagePath?: string, pageTitle?: string): void {
     return;
   }
 
+  // Stay inert until a measurement ID is configured, matching initAnalytics.
   const measurementId = initializedMeasurementId || getMeasurementId();
   if (!measurementId) return;
 
-  window.gtag('config', measurementId, {
+  // GA4 ignores a repeated `config` for an already-configured stream, so a
+  // manual page view has to be sent as a `page_view` event instead.
+  window.gtag('event', 'page_view', {
     page_path: pagePath ?? (typeof window.location !== 'undefined' ? window.location.pathname + window.location.search : undefined),
     page_title: pageTitle ?? (typeof document !== 'undefined' ? document.title : undefined),
+    page_location: typeof window.location !== 'undefined' ? window.location.href : undefined,
   });
 }
 
