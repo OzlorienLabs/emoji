@@ -90,6 +90,8 @@ describe('service worker', () => {
   it('is linked from the document alongside the manifest', () => {
     expect(indexHtml).toContain('<link rel="manifest" href="/manifest.webmanifest" />');
     expect(indexHtml).toContain('rel="apple-touch-icon" href="/icons/icon-180.png"');
+    expect(indexHtml).toContain('<meta name="mobile-web-app-capable" content="yes" />');
+    expect(indexHtml).toContain('<meta name="apple-mobile-web-app-capable" content="yes" />');
   });
 
   it('precaches the shell and versions its caches', () => {

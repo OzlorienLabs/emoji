@@ -17,15 +17,31 @@ interface AILanguageModelSession {
   destroy: () => void;
 }
 
+export interface AILanguageModelExpectedIO {
+  readonly type?: string;
+  readonly languages?: readonly string[];
+}
+
+export interface AILanguageModelCreateOptions {
+  systemPrompt?: string;
+  temperature?: number;
+  topK?: number;
+  signal?: AbortSignal;
+  outputLanguage?: string;
+  expectedInputs?: readonly AILanguageModelExpectedIO[];
+  expectedOutputs?: readonly AILanguageModelExpectedIO[];
+}
+
+export interface AILanguageModelAvailabilityOptions {
+  outputLanguage?: string;
+  expectedInputs?: readonly AILanguageModelExpectedIO[];
+  expectedOutputs?: readonly AILanguageModelExpectedIO[];
+}
+
 interface AILanguageModelFactory {
   capabilities?: () => Promise<{ available?: string } | null>;
-  availability?: () => Promise<string | undefined>;
-  create?: (options?: {
-    systemPrompt?: string;
-    temperature?: number;
-    topK?: number;
-    signal?: AbortSignal;
-  }) => Promise<AILanguageModelSession>;
+  availability?: (options?: AILanguageModelAvailabilityOptions) => Promise<string | undefined>;
+  create?: (options?: AILanguageModelCreateOptions) => Promise<AILanguageModelSession>;
 }
 
 interface ChromeAIGlobals {
@@ -215,7 +231,16 @@ export async function checkChromeAIAvailability(
 
   try {
     if (typeof factory.availability === 'function') {
-      const status = await factory.availability();
+      let status: string | undefined;
+      try {
+        status = await factory.availability({
+          outputLanguage: 'en',
+          expectedInputs: [{ type: 'text', languages: ['en'] }],
+          expectedOutputs: [{ type: 'text', languages: ['en'] }],
+        });
+      } catch {
+        status = await factory.availability();
+      }
       const isAvail = status === 'readily' || status === 'available' || status === 'after-download';
       return {
         available: isAvail,
@@ -293,6 +318,9 @@ export async function polishMessageWithAI(
       temperature: 0.6,
       topK: 3,
       signal: options.signal,
+      outputLanguage: 'en',
+      expectedInputs: [{ type: 'text', languages: ['en'] }],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }],
     });
 
     const promptText = `Please provide a single polished rewording for the following message:\n\n${text}`;

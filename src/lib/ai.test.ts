@@ -208,6 +208,26 @@ This phrasing is direct and polite.`;
       const result = await checkChromeAIAvailability(mockFactory);
       expect(result).toEqual({ available: false, status: 'unsupported' });
     });
+
+    it('passes outputLanguage and expectedInputs/expectedOutputs to availability()', async () => {
+      const availability = vi.fn().mockResolvedValue('readily');
+      await checkChromeAIAvailability({ availability });
+      expect(availability).toHaveBeenCalledWith({
+        outputLanguage: 'en',
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }],
+      });
+    });
+
+    it('falls back to availability() without options if call with options throws', async () => {
+      const availability = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('unsupported option'))
+        .mockResolvedValueOnce('available');
+      const result = await checkChromeAIAvailability({ availability });
+      expect(result).toEqual({ available: true, status: 'available' });
+      expect(availability).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('polishMessageWithAI', () => {
@@ -233,6 +253,9 @@ This phrasing is direct and polite.`;
       });
 
       expect(create).toHaveBeenCalledOnce();
+      expect(create.mock.calls[0]![0]!.outputLanguage).toBe('en');
+      expect(create.mock.calls[0]![0]!.expectedOutputs).toEqual([{ type: 'text', languages: ['en'] }]);
+      expect(create.mock.calls[0]![0]!.expectedInputs).toEqual([{ type: 'text', languages: ['en'] }]);
       expect(create.mock.calls[0]![0]!.systemPrompt).toContain('You are an expert on-device text editor');
       expect(create.mock.calls[0]![0]!.systemPrompt).toContain('EXACTLY ONE polished');
       expect(create.mock.calls[0]![0]!.systemPrompt).toContain('STRICT SYMBOL PRESERVATION');
