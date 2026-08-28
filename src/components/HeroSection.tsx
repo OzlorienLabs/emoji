@@ -31,9 +31,7 @@ export function HeroSection({ searchSlot, ideas, onIdea, stats }: HeroSectionPro
         </h1>
 
         <p className="hero__lede">
-          Search a feeling, a phrase, an object or an icon name. Every Unicode 17
-          sequence and every Lucide vector, ranked by meaning — no account, no
-          tracking, and your searches never leave your device.
+          Search a feeling, a phrase, an object or an icon name.
         </p>
 
         <div className="hero__search">
