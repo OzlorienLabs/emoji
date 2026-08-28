@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import iconNodes from 'lucide-static/icon-nodes.json' with { type: 'json' };
 import tags from 'lucide-static/tags.json' with { type: 'json' };
+import { ICON_TAG_OVERLAYS } from './icon-tag-overlays.mjs';
 
 const SOURCE_VERSION = '1.34.0';
 const OUTPUT_PATH = resolve('public/data/icons-1.34.json');
@@ -122,8 +123,10 @@ function toPascalCase(value) {
 const sortedNames = Object.keys(iconNodes).sort((a, b) => a.localeCompare(b));
 
 const icons = sortedNames.map((name, index) => {
-  const iconTags = tags[name] ?? [];
-  const category = categorizeIcon(name, iconTags);
+  const baseTags = tags[name] ?? [];
+  const category = categorizeIcon(name, baseTags);
+  const overlay = ICON_TAG_OVERLAYS[name] ?? [];
+  const iconTags = [...new Set([...baseTags, ...overlay])];
   const words = name.replace(/-/g, ' ');
   const pascalName = toPascalCase(name);
 

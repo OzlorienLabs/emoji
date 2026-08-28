@@ -5,6 +5,7 @@ import data from 'emojibase-data/en/data.json' with { type: 'json' };
 import messages from 'emojibase-data/en/messages.json' with { type: 'json' };
 import groupMetadata from 'emojibase-data/meta/groups.json' with { type: 'json' };
 import shortcodes from 'emojibase-data/en/shortcodes/emojibase.json' with { type: 'json' };
+import { EMOJI_KEYWORD_OVERLAYS } from './emoji-keyword-overlays.mjs';
 
 const SOURCE_VERSION = '17.0.0';
 const OUTPUT_PATH = resolve('public/data/emoji-en-17.0.json');
@@ -62,7 +63,9 @@ const emojis = data
     ...transformVariant(source),
     group: source.group,
     subgroup: source.subgroup,
-    keywords: source.tags ?? [],
+    keywords: [
+      ...new Set([...(source.tags ?? []), ...(EMOJI_KEYWORD_OVERLAYS[source.hexcode] ?? [])]),
+    ],
     variants: (source.skins ?? [])
       .filter((variant) => Number.isFinite(variant.order))
       .sort((left, right) => left.order - right.order)
