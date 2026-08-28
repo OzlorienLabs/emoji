@@ -570,6 +570,44 @@ function EmojiExperience({
     };
   }, [catalog.emojis.length, iconCatalog.totalCount, reducedMotion]);
 
+  /**
+   * The dock is fixed over the page, so the flow has to reserve its height or
+   * the last row of results and the footer sit under it with no way to scroll
+   * them clear. That height is not a constant — the dock grows as the message
+   * wraps and shrinks when its actions step out on a phone — so it is measured
+   * and published as a custom property the stylesheet reads.
+   */
+  const syncDockHeight = useCallback(() => {
+    const dock = dockRef.current;
+    const shell = dock?.closest<HTMLElement>('.app-shell');
+    if (!dock || !shell) return;
+    const { height } = dock.getBoundingClientRect();
+    shell.style.setProperty('--ec-dock-h', `${Math.round(height)}px`);
+  }, []);
+
+  // Everything the dock's own markup can change about its height. This has to
+  // be a passive effect, not a layout one: the dock writes its editor's DOM in
+  // a passive effect of its own, and a child's runs before the parent's, so
+  // this is the first point at which the dock has its final height.
+  useEffect(syncDockHeight, [
+    syncDockHeight,
+    composer.value,
+    ai.isAvailable,
+    ai.isPolishing,
+  ]);
+
+  // Everything else: a rotation, a font landing, a reflow of the action row.
+  // ResizeObserver is the only thing that sees those, but it is an enhancement
+  // — without it the measurements above still cover the common case, and the
+  // stylesheet's own fallback covers the rest.
+  useEffect(() => {
+    const dock = dockRef.current;
+    if (!dock || typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(syncDockHeight);
+    observer.observe(dock);
+    return () => observer.disconnect();
+  }, [syncDockHeight]);
+
   useEffect(() => () => manualCleanup.current?.(), []);
 
   const finishCopy = (result: ClipboardResult, successMessage: string) => {

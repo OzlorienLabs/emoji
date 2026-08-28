@@ -235,8 +235,16 @@ html {
   min-width: 320px;
   min-height: 100%;
   scroll-behavior: smooth;
+  /* Clears the fixed header plus the sticky filter bar beneath it. */
   scroll-padding-top: 8.5rem;
   overflow-x: clip;
+}
+
+@media (width <= 640px) {
+  :root,
+  html {
+    scroll-padding-top: 7.25rem;
+  }
 }
 
 body {
@@ -407,6 +415,11 @@ a:hover {
   position: relative;
   z-index: 1;
   padding-top: var(--ec-header-h);
+  /* The composer dock is fixed over the page, so the last row of results and
+     the footer can only be read if the flow reserves the dock's own height.
+     App.tsx measures the dock into --ec-dock-h; the fallback stands in for a
+     dock stretched to its tallest, so it is safe on its own if nothing does. */
+  padding-bottom: calc(var(--ec-dock-h, 168px) + 26px + env(safe-area-inset-bottom));
 }
 
 .shell-width {
@@ -757,7 +770,18 @@ a.brand-mark:active {
   font-size: 11px;
 }
 
-@media (width <= 560px) {
+/* Phones. The header shrinks with the viewport and drops every label that
+   only repeats what its icon already says, so nothing has to truncate. */
+@media (width <= 640px) {
+  .app-shell {
+    --ec-header-h: 56px;
+  }
+
+  .site-header {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
   .header-cta__text,
   .header-quick-copy__label {
     position: absolute;
@@ -768,12 +792,41 @@ a.brand-mark:active {
   }
 
   .header-cta {
+    height: 38px;
     padding: 0 12px;
   }
 
   .header-quick-copy {
+    height: 38px;
     padding: 0 10px;
     gap: 7px;
+  }
+
+  .brand {
+    gap: 9px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .brand__name {
+    font-size: 15px;
+  }
+
+  .icon-button {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Small phones. The wordmark goes before anything else: the compass mark is
+   itself the link home, and a clipped "Emoji Co…" reads worse than no text. */
+@media (width <= 400px) {
+  .brand__text {
+    display: none;
   }
 }
 
@@ -782,7 +835,7 @@ a.brand-mark:active {
 .prefs-popover {
   position: fixed;
   z-index: 45;
-  top: 74px;
+  top: calc(var(--ec-header-h) + 8px);
   right: clamp(10px, 3vw, 26px);
   display: flex;
   overflow-y: auto;
@@ -1130,6 +1183,45 @@ a.brand-mark:active {
   text-transform: uppercase;
 }
 
+/* Phones. The hero owns the entire first screen on a small viewport, so it
+   gives up everything that is not the headline and the search field: the
+   drifting glyphs (which land on the headline below ~400px), the count cards,
+   and the three wrapped rows of idea chips, which become one scrolling rail. */
+@media (width <= 640px) {
+  .hero {
+    padding: 16px 0 12px;
+  }
+
+  .hero__decor {
+    display: none;
+  }
+
+  .hero__inner {
+    gap: 12px;
+  }
+
+  .hero h1 {
+    max-width: 14ch;
+    font-size: clamp(1.7rem, 7.6vw, 2.3rem);
+  }
+
+  .hero__lede {
+    font-size: 13.5px;
+  }
+
+  .hero__stats {
+    display: none;
+  }
+}
+
+/* Small phones. The lede only restates the search placeholder, which is on
+   screen directly beneath it. */
+@media (width <= 400px) {
+  .hero__lede {
+    display: none;
+  }
+}
+
 /* ----------------------------------------------------------- search bar -- */
 
 .search-bar {
@@ -1272,6 +1364,31 @@ a.brand-mark:active {
   background: var(--ec-accent-fill);
 }
 
+/* Phones. Seven chips wrap to three rows, which costs more of the first screen
+   than the results they compete with; one scrolling rail costs one row. The
+   empty-state copy keeps wrapping, since there is nothing to scroll past. */
+@media (width <= 640px) {
+  .hero__search .idea-chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin-top: 10px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  }
+
+  .hero__search .idea-chips::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .hero__search .idea-chip {
+    flex: 0 0 auto;
+  }
+}
+
 .idea-chip--solid:hover {
   background: var(--ec-accent-fill-hover);
 }
@@ -1356,7 +1473,40 @@ a.brand-mark:active {
   opacity: 0.75;
 }
 
+/* Phones. The bar is sticky under the header, so its height is charged
+   against every screenful of results below it. It collapses from two rows to
+   one by dropping the segment icons and counts — the words carry the meaning —
+   and letting the category rail scroll in whatever width is left. */
 @media (width <= 640px) {
+  .filter-bar {
+    padding: 7px 0;
+  }
+
+  .filter-bar__row {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .content-type-filter {
+    padding: 3px;
+    border-radius: 13px;
+  }
+
+  .content-type-filter__pill {
+    top: 3px;
+    left: 3px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .content-type-filter__chip {
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 10px;
+    font-size: 12.5px;
+  }
+
+  .content-type-filter__icon,
   .content-type-filter__count {
     display: none;
   }
@@ -1430,6 +1580,20 @@ a.brand-mark:active {
 .category-nav__icon {
   font-size: 13px;
   line-height: 1;
+}
+
+/* Phones. The rail gives up its 320px flex basis so the segmented control
+   keeps its full width and the categories scroll in whatever is left. */
+@media (width <= 640px) {
+  .category-nav {
+    flex: 1 1 0;
+  }
+
+  .category-nav__chip {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
 }
 
 /* -------------------------------------------------------------- results -- */
@@ -1681,6 +1845,72 @@ a.brand-mark:active {
   margin: 0;
   color: rgb(var(--ec-ink-rgb) / var(--ec-a-mute));
   font-size: 13.5px;
+}
+
+/* Phones. Every tier steps down one notch so a 390px screen shows four
+   columns instead of three; the size preference still changes the density,
+   it just starts from a scale that suits the viewport. */
+@media (width <= 640px) {
+  .results-section {
+    padding: 16px 0 20px;
+  }
+
+  .results-heading {
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 12px;
+  }
+
+  .results-heading h2 {
+    font-size: 1.15rem;
+  }
+
+  .result-total {
+    font-size: 11px;
+  }
+
+  .app-shell[data-size="small"] {
+    --ec-tile-min: 52px;
+    --ec-tile-glyph: 21px;
+    --ec-tile-icon: 19px;
+  }
+
+  .app-shell[data-size="medium"] {
+    --ec-tile-min: 66px;
+    --ec-tile-glyph: 28px;
+    --ec-tile-icon: 25px;
+  }
+
+  .app-shell[data-size="large"] {
+    --ec-tile-min: 88px;
+    --ec-tile-glyph: 38px;
+    --ec-tile-icon: 34px;
+  }
+
+  .emoji-grid__list {
+    gap: 8px;
+  }
+
+  .emoji-tile__select {
+    padding: 6px 4px;
+    border-radius: 15px;
+    gap: 4px;
+  }
+
+  /* At the smallest tier the tile is 52px wide, where a name is one clipped
+     syllable. The glyph is the label at that size. */
+  .app-shell[data-size="small"] .emoji-tile__name {
+    display: none;
+  }
+}
+
+/* Touch has no hover, so the details affordance can never be revealed on
+   demand the way it is with a pointer: it rests at a legible opacity instead
+   of the 0.34 that only makes sense as a hover target. */
+@media (hover: none) {
+  .emoji-tile__details {
+    opacity: 0.6;
+  }
 }
 
 /* --------------------------------------------------------------- footer -- */
@@ -2092,9 +2322,31 @@ a.brand-mark:active {
   white-space: nowrap;
 }
 
-@media (width <= 620px) {
-  .composer-ai__label,
-  .composer-copy__label {
+/* Phones. The dock is fixed over the results, so nothing in it may cost a row
+   it has not earned. The AI button keeps its sparkle and drops its word; Copy
+   does the opposite, because a phone has no key for the ⌘↵ hint to name. */
+@media (width <= 640px) {
+  .composer-shell {
+    padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .composer-dock {
+    padding: 8px;
+    border-radius: 20px;
+  }
+
+  .composer-row {
+    gap: 8px;
+  }
+
+  .composer-input {
+    min-height: 42px;
+    max-height: 96px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .composer-ai__label {
     position: absolute;
     overflow: hidden;
     width: 1px;
@@ -2102,12 +2354,38 @@ a.brand-mark:active {
     clip-path: inset(50%);
   }
 
-  .composer-ai,
-  .composer-copy {
-    padding: 0 14px;
+  .composer-copy .keycap {
+    display: none;
   }
 
   .composer-count {
+    display: none;
+  }
+
+  .composer-button,
+  .composer-copy,
+  .composer-ai {
+    height: 40px;
+  }
+
+  .composer-button {
+    width: 40px;
+  }
+
+  .composer-ai {
+    padding: 0 14px;
+  }
+
+  .composer-copy {
+    padding: 0 18px;
+  }
+
+  /* An empty composer has nothing to undo, clear, polish or copy, so every
+     action in it is already disabled. A row of dead controls is worth less
+     than the row of results it would hide, so the disabled ones step out
+     until there is something to act on. Undo survives a clear, so this is
+     keyed off each button's own state rather than off the dock being empty. */
+  .composer-dock[data-empty="true"] .composer-actions button:disabled {
     display: none;
   }
 }
@@ -2455,6 +2733,59 @@ a.brand-mark:active {
   color: rgb(var(--ec-ink-rgb) / var(--ec-a-body));
   font-family: var(--ec-font-mono);
   font-size: 12px;
+}
+
+/* Phones. A centred card leaves a dead margin down both edges and pushes the
+   actions past the fold; the same dialog reads better as a bottom sheet, which
+   also puts its controls where a thumb already is. */
+@media (width <= 640px) {
+  .details-dialog {
+    inset: auto 0 0;
+    width: auto;
+    max-width: none;
+    max-height: 90vh;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 24px 24px 0 0;
+    margin: 0;
+  }
+
+  .details-heading,
+  .details-heading__info {
+    gap: 12px;
+  }
+
+  .details-glyph {
+    width: 62px;
+    height: 62px;
+    border-radius: 18px;
+    font-size: 34px;
+  }
+
+  /* The kicker is a two-level path ("Smileys & emotion · Smiling"); at the
+     display tracking it wraps to three lines beside a 62px glyph. */
+  .details-heading .section-kicker {
+    letter-spacing: 0.08em;
+  }
+
+  .details-section {
+    margin-top: 18px;
+  }
+
+  .details-section--divided {
+    padding-top: 16px;
+    margin-top: 18px;
+  }
+
+  .details-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 20px;
+  }
+
+  .details-actions .button-primary {
+    grid-column: 1 / -1;
+  }
 }
 
 /* -------------------------------------------------------------- buttons -- */

@@ -171,7 +171,12 @@ export function ComposerDock({
       : 'Polish message with AI';
 
   return (
-    <div className="composer-dock" ref={dockRef} aria-label="Message composer">
+    <div
+      className="composer-dock"
+      ref={dockRef}
+      data-empty={!history.value ? 'true' : undefined}
+      aria-label="Message composer"
+    >
       <h2 className="sr-only">Your message</h2>
       <div className="composer-row">
         <div className="composer-input-wrap">
