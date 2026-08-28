@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -10,16 +12,32 @@ import { AuroraBackdrop } from './components/AuroraBackdrop';
 import { CategoryNav, type CategoryId, type CategoryOption } from './components/CategoryNav';
 import { ComposerDock } from './components/ComposerDock';
 import { ContentTypeFilter } from './components/ContentTypeFilter';
-import { EmojiDetailsDialog } from './components/EmojiDetailsDialog';
 import { EmojiGrid, type EmojiGridItem, type GridSelectableItem } from './components/EmojiGrid';
-import { FeedbackDialog } from './components/FeedbackDialog';
 import { HeroSection } from './components/HeroSection';
-import { IconDetailsDialog } from './components/IconDetailsDialog';
-import { PreferencePanel } from './components/PreferencePanel';
 import { SearchBar } from './components/SearchBar';
 import { SiteHeader } from './components/SiteHeader';
 import { Toast } from './components/Toast';
-import { flattenCatalog, flattenIconCatalog, getIconHtml, getIconJsx, getIconSvg } from './data/catalog';
+import {
+  EMPTY_ICON_CATALOG,
+  flattenCatalog,
+  flattenIconCatalog,
+  getIconHtml,
+  getIconJsx,
+  getIconSvg,
+} from './data/catalog';
+
+const EmojiDetailsDialog = lazy(() =>
+  import('./components/EmojiDetailsDialog').then((m) => ({ default: m.EmojiDetailsDialog })),
+);
+const IconDetailsDialog = lazy(() =>
+  import('./components/IconDetailsDialog').then((m) => ({ default: m.IconDetailsDialog })),
+);
+const FeedbackDialog = lazy(() =>
+  import('./components/FeedbackDialog').then((m) => ({ default: m.FeedbackDialog })),
+);
+const PreferencePanel = lazy(() =>
+  import('./components/PreferencePanel').then((m) => ({ default: m.PreferencePanel })),
+);
 import {
   filterCategoriesForContentType,
   resolveCategories,
@@ -33,6 +51,8 @@ import type {
   EmojiVariant,
   IconCatalog,
   IconRecord,
+  SearchableEmoji,
+  SearchableIcon,
 } from './data/catalog-types';
 import { useEmojiCatalog } from './hooks/useEmojiCatalog';
 import { useEmojiPreferences } from './hooks/useEmojiPreferences';
@@ -59,10 +79,9 @@ import {
 } from './lib/composer';
 import { countUp, flyToDock, staggerGridCells } from './lib/motion';
 import type { EmojiPreferences, StorageLike } from './lib/preferences';
-import { createSearchIndex, searchItems } from './lib/search';
+import { createSearchIndex, searchItems, type ItemSearchIndex } from './lib/search';
 import { categoryTitle, computeDocumentTitle } from './lib/seo';
 import { selectToneVariant } from './lib/variants';
-import { iconCatalogFixture } from './test/catalog-fixture';
 
 type CopyFunction = (text: string, options?: CopyTextOptions) => Promise<ClipboardResult>;
 type ActiveCategory = CategoryId | null;
@@ -76,11 +95,15 @@ export interface AppProps {
   storage?: StorageLike | null;
   copy?: CopyFunction;
   customLanguageModel?: unknown;
+  loadIcons?: () => Promise<IconCatalog>;
+  iconsLoaded?: boolean;
 }
 
 interface EmojiExperienceProps extends Omit<AppProps, 'initialCatalog' | 'initialIconCatalog' | 'fetcher'> {
   catalog: EmojiCatalog;
   iconCatalog: IconCatalog;
+  loadIcons?: () => Promise<IconCatalog>;
+  iconsLoaded?: boolean;
 }
 
 
@@ -127,6 +150,21 @@ function isEmojiVariant(item: unknown): item is EmojiVariant {
   return typeof item === 'object' && item !== null && 'glyph' in item;
 }
 
+const searchIndexCache = new WeakMap<
+  readonly (SearchableEmoji | SearchableIcon)[],
+  ItemSearchIndex
+>();
+
+function getOrCreateIndex(
+  records: readonly (SearchableEmoji | SearchableIcon)[],
+): ItemSearchIndex {
+  const cached = searchIndexCache.get(records);
+  if (cached) return cached;
+  const index = createSearchIndex(records);
+  searchIndexCache.set(records, index);
+  return index;
+}
+
 
 function LoadingView() {
   return (
@@ -154,13 +192,6 @@ function ErrorView({ message, retry }: { message: string; retry: () => void }) {
   );
 }
 
-function CatalogBoundary(props: Omit<AppProps, 'initialCatalog' | 'initialIconCatalog'>) {
-  const state = useEmojiCatalog(props.fetcher ?? globalThis.fetch);
-  if (state.status === 'loading') return <LoadingView />;
-  if (state.status === 'error') return <ErrorView message={state.message} retry={state.retry} />;
-  return <EmojiExperience {...props} catalog={state.catalog} iconCatalog={state.iconCatalog} />;
-}
-
 function EmojiExperience({
   catalog,
   iconCatalog,
@@ -168,6 +199,8 @@ function EmojiExperience({
   storage,
   copy = copyText,
   customLanguageModel,
+  loadIcons,
+  iconsLoaded = true,
 }: EmojiExperienceProps) {
   const resolvedCategories = useMemo(
     () => resolveCategories(catalog, iconCatalog),
@@ -274,7 +307,29 @@ function EmojiExperience({
   const emojiRecords = useMemo(() => flattenCatalog(catalog), [catalog]);
   const iconRecords = useMemo(() => flattenIconCatalog(iconCatalog), [iconCatalog]);
   const allRecords = useMemo(() => [...emojiRecords, ...iconRecords], [emojiRecords, iconRecords]);
-  const searchIndex = useMemo(() => createSearchIndex(allRecords), [allRecords]);
+
+  // Pre-warm search index in the background so it's ready when the user types
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      getOrCreateIndex(allRecords);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [allRecords]);
+
+  const searchIndex = useMemo(() => {
+    if (!deferredQuery.trim()) return null;
+    return getOrCreateIndex(allRecords);
+  }, [allRecords, deferredQuery]);
+
+  useEffect(() => {
+    if (
+      (contentType === 'icon' || (contentType === 'all' && query.trim() !== '')) &&
+      !iconsLoaded &&
+      loadIcons
+    ) {
+      void loadIcons();
+    }
+  }, [contentType, iconsLoaded, loadIcons, query]);
 
   const familyById = useMemo(
     () => new Map(catalog.emojis.map((family) => [family.id, family])),
@@ -302,7 +357,7 @@ function EmojiExperience({
     let items: readonly EmojiGridItem[];
     const normalizedQuery = deferredQuery.trim();
 
-    if (normalizedQuery) {
+    if (normalizedQuery && searchIndex) {
       const searchGroupFilter =
         category === 'favorites' || category === 'recent'
           ? undefined
@@ -717,16 +772,18 @@ function EmojiExperience({
         }}
       >
         {prefsOpen ? (
-          <PreferencePanel
-            preferences={preferences}
-            onDismiss={() => setPrefsOpen(false)}
-            onChange={(patch) => {
-              preferenceController.update(patch);
-              for (const [key, val] of Object.entries(patch)) {
-                trackPreferenceChange(key, val);
-              }
-            }}
-          />
+          <Suspense fallback={null}>
+            <PreferencePanel
+              preferences={preferences}
+              onDismiss={() => setPrefsOpen(false)}
+              onChange={(patch) => {
+                preferenceController.update(patch);
+                for (const [key, val] of Object.entries(patch)) {
+                  trackPreferenceChange(key, val);
+                }
+              }}
+            />
+          </Suspense>
         ) : null}
       </SiteHeader>
 
@@ -894,89 +951,120 @@ function EmojiExperience({
       </div>
 
       {feedbackOpen ? (
-        <FeedbackDialog
-          onClose={() => setFeedbackOpen(false)}
-          onSent={(sent) => {
-            trackEvent('feedback_submit', { has_email: sent.email.trim().length > 0 });
-          }}
-        />
+        <Suspense fallback={null}>
+          <FeedbackDialog
+            onClose={() => setFeedbackOpen(false)}
+            onSent={(sent) => {
+              trackEvent('feedback_submit', { has_email: sent.email.trim().length > 0 });
+            }}
+          />
+        </Suspense>
       ) : null}
 
       {detailsFamily ? (
-        <EmojiDetailsDialog
-          key={detailsFamily.id}
-          family={detailsFamily}
-          groupLabel={detailsGroup}
-          subgroupLabel={detailsSubgroup}
-          favorite={preferences.favoriteIds.includes(detailsFamily.id)}
-          relatedFamilies={relatedFamilies}
-          displayVariant={selectToneVariant(detailsFamily, preferences.tone)}
-          onToggleFavorite={() => preferenceController.toggleFavorite(detailsFamily.id)}
-          onViewRelated={setDetailsFamily}
-          onSearchKeyword={runSearch}
-          onCopyGlyph={async (glyph) => {
-            trackCopy('emoji', glyph, 'glyph');
-            finishCopy(await copy(glyph), `${detailsFamily.name} copied`);
-          }}
-          onCopyShortcode={async (shortcode) => {
-            trackCopy('emoji', detailsFamily.id, 'shortcode');
-            finishCopy(await copy(shortcode), `Shortcode ${shortcode} copied`);
-          }}
-          onChoose={(variant) => {
-            const source = detailsFamily;
-            const trigger = detailsTriggerRef.current;
-            setDetailsFamily(null);
-            void selectItem(variant, source);
-            if (preferences.quickCopy) queueMicrotask(() => trigger?.focus());
-          }}
-          onClose={closeDetails}
-        />
+        <Suspense fallback={null}>
+          <EmojiDetailsDialog
+            key={detailsFamily.id}
+            family={detailsFamily}
+            groupLabel={detailsGroup}
+            subgroupLabel={detailsSubgroup}
+            favorite={preferences.favoriteIds.includes(detailsFamily.id)}
+            relatedFamilies={relatedFamilies}
+            displayVariant={selectToneVariant(detailsFamily, preferences.tone)}
+            onToggleFavorite={() => preferenceController.toggleFavorite(detailsFamily.id)}
+            onViewRelated={setDetailsFamily}
+            onSearchKeyword={runSearch}
+            onCopyGlyph={async (glyph) => {
+              trackCopy('emoji', glyph, 'glyph');
+              finishCopy(await copy(glyph), `${detailsFamily.name} copied`);
+            }}
+            onCopyShortcode={async (shortcode) => {
+              trackCopy('emoji', detailsFamily.id, 'shortcode');
+              finishCopy(await copy(shortcode), `Shortcode ${shortcode} copied`);
+            }}
+            onChoose={(variant) => {
+              const source = detailsFamily;
+              const trigger = detailsTriggerRef.current;
+              setDetailsFamily(null);
+              void selectItem(variant, source);
+              if (preferences.quickCopy) queueMicrotask(() => trigger?.focus());
+            }}
+            onClose={closeDetails}
+          />
+        </Suspense>
       ) : null}
 
       {detailsIcon ? (
-        <IconDetailsDialog
-          key={detailsIcon.id}
-          icon={detailsIcon}
-          favorite={preferences.favoriteIds.includes(detailsIcon.id)}
-          relatedIcons={relatedIcons}
-          onSearchKeyword={runSearch}
-          onAddToMessage={(icon) => {
-            const trigger = detailsTriggerRef.current;
-            setDetailsIcon(null);
-            void selectItem(icon, icon);
-            if (preferences.quickCopy) queueMicrotask(() => trigger?.focus());
-          }}
-          onCopySvg={async (svg) => {
-            trackCopy('icon', detailsIcon.kebabName, 'svg');
-            finishCopy(await copy(svg), `SVG for ${detailsIcon.name} copied`);
-          }}
-          onCopyJsx={async (jsx) => {
-            trackCopy('icon', detailsIcon.kebabName, 'jsx');
-            finishCopy(await copy(jsx), `JSX for ${detailsIcon.name} copied`);
-          }}
-          onCopyName={async (name) => {
-            trackCopy('icon', detailsIcon.kebabName, 'name');
-            finishCopy(await copy(name), `Name ${name} copied`);
-          }}
-          onCopyHtml={async (html) => {
-            trackCopy('icon', detailsIcon.kebabName, 'html');
-            finishCopy(await copy(html), `HTML tag for ${detailsIcon.name} copied`);
-          }}
-          onToggleFavorite={() => preferenceController.toggleFavorite(detailsIcon.id)}
-          onViewRelated={setDetailsIcon}
-          onClose={closeDetails}
-        />
+        <Suspense fallback={null}>
+          <IconDetailsDialog
+            key={detailsIcon.id}
+            icon={detailsIcon}
+            favorite={preferences.favoriteIds.includes(detailsIcon.id)}
+            relatedIcons={relatedIcons}
+            onSearchKeyword={runSearch}
+            onAddToMessage={(icon) => {
+              const trigger = detailsTriggerRef.current;
+              setDetailsIcon(null);
+              void selectItem(icon, icon);
+              if (preferences.quickCopy) queueMicrotask(() => trigger?.focus());
+            }}
+            onCopySvg={async (svg) => {
+              trackCopy('icon', detailsIcon.kebabName, 'svg');
+              finishCopy(await copy(svg), `SVG for ${detailsIcon.name} copied`);
+            }}
+            onCopyJsx={async (jsx) => {
+              trackCopy('icon', detailsIcon.kebabName, 'jsx');
+              finishCopy(await copy(jsx), `JSX for ${detailsIcon.name} copied`);
+            }}
+            onCopyName={async (name) => {
+              trackCopy('icon', detailsIcon.kebabName, 'name');
+              finishCopy(await copy(name), `Name ${name} copied`);
+            }}
+            onCopyHtml={async (html) => {
+              trackCopy('icon', detailsIcon.kebabName, 'html');
+              finishCopy(await copy(html), `HTML tag for ${detailsIcon.name} copied`);
+            }}
+            onToggleFavorite={() => preferenceController.toggleFavorite(detailsIcon.id)}
+            onViewRelated={setDetailsIcon}
+            onClose={closeDetails}
+          />
+        </Suspense>
       ) : null}
     </div>
   );
 }
 
+function CatalogBoundary(props: Omit<AppProps, 'initialCatalog' | 'initialIconCatalog'>) {
+  const state = useEmojiCatalog(props.fetcher ?? globalThis.fetch);
+  if (state.status === 'loading') return <LoadingView />;
+  if (state.status === 'error') return <ErrorView message={state.message} retry={state.retry} />;
+  return (
+    <EmojiExperience
+      {...props}
+      catalog={state.catalog}
+      iconCatalog={state.iconCatalog}
+      loadIcons={state.loadIcons}
+      iconsLoaded={state.iconsLoaded}
+    />
+  );
+}
+
 export function App({
   initialCatalog,
-  initialIconCatalog = iconCatalogFixture,
+  initialIconCatalog,
+  loadIcons,
+  iconsLoaded,
   ...props
 }: AppProps) {
   return initialCatalog
-    ? <EmojiExperience {...props} catalog={initialCatalog} iconCatalog={initialIconCatalog} />
+    ? (
+        <EmojiExperience
+          {...props}
+          catalog={initialCatalog}
+          iconCatalog={initialIconCatalog ?? EMPTY_ICON_CATALOG}
+          loadIcons={loadIcons}
+          iconsLoaded={iconsLoaded ?? Boolean(initialIconCatalog)}
+        />
+      )
     : <CatalogBoundary {...props} />;
 }

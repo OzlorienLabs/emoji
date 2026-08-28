@@ -8,6 +8,29 @@ import type {
   SearchableIcon,
 } from './catalog-types';
 
+export const EMPTY_ICON_CATALOG: IconCatalog = Object.freeze({
+  source: 'empty',
+  version: '1.34.0',
+  totalCount: 0,
+  checksum: '',
+  categories: [],
+  icons: [],
+});
+
+export const EMPTY_EMOJI_CATALOG: EmojiCatalog = Object.freeze({
+  source: 'empty',
+  emojiVersion: '17.0',
+  cldrVersion: '48',
+  locale: 'en',
+  checksum: '',
+  familyCount: 0,
+  variantCount: 0,
+  totalCount: 0,
+  groups: [],
+  subgroups: [],
+  emojis: [],
+});
+
 function normalizeTerm(value: string): string {
   return value
     .normalize('NFKD')

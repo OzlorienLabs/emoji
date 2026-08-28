@@ -163,7 +163,7 @@ describe('Emoji Compass', () => {
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} copy={copy} />);
 
     await user.click(screen.getByRole('button', { name: 'Details for arrow right' }));
-    expect(screen.getByRole('heading', { level: 2, name: 'arrow right' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'arrow right' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Copy SVG' }));
     expect(copy).toHaveBeenCalledWith(expect.stringContaining('<svg'));
@@ -192,7 +192,7 @@ describe('Emoji Compass', () => {
     render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
 
     await user.click(screen.getByRole('button', { name: 'Open preferences' }));
-    await user.click(screen.getByRole('button', { name: 'Large' }));
+    await user.click(await screen.findByRole('button', { name: 'Large' }));
     await user.click(screen.getByRole('button', { name: 'Text' }));
     await user.click(screen.getByRole('button', { name: 'Dark skin tone' }));
     await user.click(screen.getByRole('button', { name: 'Dark theme' }));
@@ -216,7 +216,7 @@ describe('Emoji Compass', () => {
 
     const detailsButton = screen.getByRole('button', { name: 'Details for woman technologist' });
     await user.click(detailsButton);
-    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
+    await user.click(await screen.findByRole('button', { name: 'Add to favorites' }));
     await user.click(screen.getByRole('button', { name: 'Close details' }));
     expect(detailsButton).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Favorites' }));
@@ -840,7 +840,7 @@ describe('Emoji Compass', () => {
       expect(link).toHaveAttribute('aria-haspopup', 'dialog');
       await user.click(link);
 
-      const sheet = screen.getByRole('dialog');
+      const sheet = await screen.findByRole('dialog');
       expect(sheet).toBeInTheDocument();
 
       await user.type(
@@ -1021,4 +1021,44 @@ describe('Emoji Compass', () => {
     render(<App initialCatalog={travelCatalog} initialIconCatalog={travelIconCatalog} />);
     expect(screen.getByRole('button', { name: 'Travel & Places' })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('renders with initialCatalog only and handles on-demand icon loading', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} />);
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+    // Icons tab initially shows empty placeholder
+    await user.click(screen.getByRole('tab', { name: /Icons/ }));
+    expect(screen.getByText('Nothing here yet')).toBeInTheDocument();
+  });
+
+  it('updates composer when typing directly into composer input and handles clear', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+    const editor = screen.getByLabelText('Emoji composer');
+    await user.click(editor);
+    await user.type(editor, 'hello!');
+    expect(editor).toHaveTextContent('hello!');
+
+    const clearButton = screen.getByRole('button', { name: 'Clear composer' });
+    await user.click(clearButton);
+    expect(editor).toHaveTextContent('');
+  });
+
+  it('triggers loadIcons when icons are not yet loaded and user selects icons tab', async () => {
+    const user = userEvent.setup();
+    const loadIcons = vi.fn().mockResolvedValue(iconCatalogFixture);
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        loadIcons={loadIcons}
+        iconsLoaded={false}
+      />,
+    );
+    expect(loadIcons).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: /Icons/ }));
+    expect(loadIcons).toHaveBeenCalled();
+  });
 });
+

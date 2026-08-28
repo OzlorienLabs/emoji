@@ -1,8 +1,14 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { EmojiCatalog, IconCatalog } from '../data/catalog-types';
-import { loadEmojiCatalog, loadIconCatalog, useEmojiCatalog } from './useEmojiCatalog';
+import {
+  isSaveDataEnabled,
+  loadCatalogs,
+  loadEmojiCatalog,
+  loadIconCatalog,
+  useEmojiCatalog,
+} from './useEmojiCatalog';
 import { iconCatalogFixture } from '../test/catalog-fixture';
 
 const catalogFixture: EmojiCatalog = {
@@ -195,4 +201,158 @@ describe('useEmojiCatalog', () => {
 
     expect(view.container).toBeEmptyDOMElement();
   });
+
+  it('supports deferred icons and loads them on demand', async () => {
+    const fetcher = mockCatalogFetcher();
+
+    function DeferredHarness() {
+      const state = useEmojiCatalog(fetcher, { deferIcons: true });
+      if (state.status === 'loading') return <p>Loading catalog</p>;
+      if (state.status === 'error') return <p>Error</p>;
+      return (
+        <div>
+          <p>{state.catalog.totalCount} emoji and {state.iconCatalog.totalCount} icons</p>
+          <button onClick={() => state.loadIcons()}>Fetch icons</button>
+        </div>
+      );
+    }
+
+    render(<DeferredHarness />);
+
+    // Emojis should be ready while icons are deferred (0 icons)
+    expect(await screen.findByText('1 emoji and 0 icons')).toBeInTheDocument();
+
+    // Trigger loading icons multiple times concurrently
+    const btn = screen.getByRole('button', { name: 'Fetch icons' });
+    await userEvent.click(btn);
+    await userEvent.click(btn);
+    expect(await screen.findByText('1 emoji and 6 icons')).toBeInTheDocument();
+
+    // Trigger again when already loaded
+    await userEvent.click(btn);
+    expect(screen.getByText('1 emoji and 6 icons')).toBeInTheDocument();
+  });
+
+  it('deduplicates concurrent in-flight calls to loadIcons', async () => {
+    const fetcher = mockCatalogFetcher();
+    const { result } = renderHook(() => useEmojiCatalog(fetcher, { deferIcons: true }));
+    await vi.waitFor(() => expect(result.current.status).toBe('ready'));
+
+    if (result.current.status === 'ready') {
+      const [icons1, icons2] = await Promise.all([
+        result.current.loadIcons(),
+        result.current.loadIcons(),
+      ]);
+      expect(icons1).toBe(icons2);
+    }
+  });
+
+  it('detects saveData and 2g network modes with isSaveDataEnabled', () => {
+    expect(isSaveDataEnabled()).toBe(false);
+
+    const originalNavigator = globalThis.navigator;
+    try {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { connection: { saveData: true } },
+        configurable: true,
+      });
+      expect(isSaveDataEnabled()).toBe(true);
+
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { connection: { effectiveType: '2g' } },
+        configurable: true,
+      });
+      expect(isSaveDataEnabled()).toBe(true);
+
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { connection: { effectiveType: '4g', saveData: false } },
+        configurable: true,
+      });
+      expect(isSaveDataEnabled()).toBe(false);
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: originalNavigator,
+        configurable: true,
+      });
+    }
+  });
+
+  it('does not update state if unmounted before emoji catalog resolves', async () => {
+    let resolveEmoji: ((val: unknown) => void) | undefined;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('emoji')) {
+        return new Promise((res) => { resolveEmoji = res; });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(iconCatalogFixture) });
+    });
+    function DeferredHarness() {
+      const state = useEmojiCatalog(fetcher);
+      return <div>{state.status}</div>;
+    }
+    const { unmount } = render(<DeferredHarness />);
+    unmount();
+    resolveEmoji!({ ok: true, status: 200, json: () => Promise.resolve(catalogFixture) });
+  });
+
+  it('does not update state if unmounted before icon catalog resolves', async () => {
+    let resolveIcon: ((val: unknown) => void) | undefined;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('icon')) {
+        return new Promise((res) => { resolveIcon = res; });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(catalogFixture) });
+    });
+    function DeferredHarness() {
+      const state = useEmojiCatalog(fetcher);
+      return <div>{state.status}</div>;
+    }
+    const { unmount } = render(<DeferredHarness />);
+    unmount();
+    resolveIcon!({ ok: true, status: 200, json: () => Promise.resolve(iconCatalogFixture) });
+  });
+
+  it('ignores icon catalog failure if emojis are already ready', async () => {
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('icon')) {
+        return Promise.reject(new Error('Failed to load icons'));
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(catalogFixture) });
+    });
+    function DeferredHarness() {
+      const state = useEmojiCatalog(fetcher);
+      if (state.status !== 'ready') return <div>loading</div>;
+      return <div>{state.catalog.totalCount} emoji and {state.iconCatalog.totalCount} icons</div>;
+    }
+    render(<DeferredHarness />);
+    expect(await screen.findByText('1 emoji and 0 icons')).toBeInTheDocument();
+  });
+
+  it('shows error if icons fail while emoji catalog is still loading', async () => {
+    let resolveEmoji: ((val: unknown) => void) | undefined;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('icon')) {
+        return Promise.reject(new Error('Icons network failure'));
+      }
+      return new Promise((res) => { resolveEmoji = res; });
+    });
+    function DeferredHarness() {
+      const state = useEmojiCatalog(fetcher);
+      if (state.status === 'error') return <div>{state.message}</div>;
+      return <div>loading</div>;
+    }
+    render(<DeferredHarness />);
+    expect(await screen.findByText('Icons network failure')).toBeInTheDocument();
+    resolveEmoji!({ ok: true, status: 200, json: () => Promise.resolve(catalogFixture) });
+  });
 });
+
+describe('loadCatalogs', () => {
+  it('loads both catalogs concurrently', async () => {
+    const fetcher = mockCatalogFetcher();
+    const result = await loadCatalogs(fetcher);
+    expect(result.catalog).toEqual(catalogFixture);
+    expect(result.iconCatalog).toEqual(iconCatalogFixture);
+  });
+});
+
+
