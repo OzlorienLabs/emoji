@@ -88,4 +88,15 @@ describe('SearchBar', () => {
     inputRef.current?.focus();
     expect(screen.getByRole('searchbox')).toHaveFocus();
   });
+
+  it('displays loading indicator text when loading prop is true', () => {
+    render(
+      <SearchBar
+        value="star"
+        loading={true}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('loading…');
+  });
 });

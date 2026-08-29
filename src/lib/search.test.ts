@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { flattenCatalog, flattenIconCatalog } from '../data/catalog';
 import { INTENT_ALIASES } from '../data/intent-aliases';
-import type { EmojiCatalog, IconCatalog } from '../data/catalog-types';
+import type { EmojiCatalog, IconCatalog, SearchableItem } from '../data/catalog-types';
 import {
   createSearchIndex,
   normalizeSearchText,
@@ -300,5 +300,42 @@ describe('alias-driven relevance', () => {
     }
 
     expect(performance.now() - startedAt).toBeLessThan(2_000);
+  });
+
+  it('searches exact glyph match without limit option', () => {
+    const results = searchItems(emojiIndex, '💙');
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.emoji.glyph).toBe('💙');
+  });
+
+  it('breaks ties using item id when score and order are identical', () => {
+    const itemA = {
+      id: 'icon-b',
+      name: 'identical item',
+      kebabName: 'identical-b',
+      pascalName: 'IdenticalB',
+      category: 'arrows',
+      categoryLabel: 'Arrows',
+      order: 10,
+      tags: ['same'],
+      searchTerms: ['same'],
+      nodes: [['path', { d: '' }]] as const,
+    };
+    const itemB = {
+      id: 'icon-a',
+      name: 'identical item',
+      kebabName: 'identical-a',
+      pascalName: 'IdenticalA',
+      category: 'arrows',
+      categoryLabel: 'Arrows',
+      order: 10,
+      tags: ['same'],
+      searchTerms: ['same'],
+      nodes: [['path', { d: '' }]] as const,
+    };
+    const testIndex = createSearchIndex([itemA, itemB] as unknown as SearchableItem[]);
+    const results = searchItems(testIndex, 'identical item');
+    expect(results[0]?.item.id).toBe('icon-a');
+    expect(results[1]?.item.id).toBe('icon-b');
   });
 });

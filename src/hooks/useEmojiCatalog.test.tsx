@@ -252,6 +252,17 @@ describe('useEmojiCatalog', () => {
 
     const originalNavigator = globalThis.navigator;
     try {
+      // @ts-expect-error test undefined navigator
+      delete globalThis.navigator;
+      expect(isSaveDataEnabled()).toBe(false);
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: originalNavigator,
+        configurable: true,
+      });
+    }
+
+    try {
       Object.defineProperty(globalThis, 'navigator', {
         value: { connection: { saveData: true } },
         configurable: true,
@@ -343,6 +354,30 @@ describe('useEmojiCatalog', () => {
     render(<DeferredHarness />);
     expect(await screen.findByText('Icons network failure')).toBeInTheDocument();
     resolveEmoji!({ ok: true, status: 200, json: () => Promise.resolve(catalogFixture) });
+  });
+
+  it('handles in-flight loadIcons resolution when status is no longer ready', async () => {
+    let resolveIcons!: (res: Response) => void;
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('icon')) {
+        return new Promise<Response>((res) => { resolveIcons = res; });
+      }
+      return Promise.resolve(responseWith(catalogFixture));
+    });
+
+    const { result } = renderHook(() => useEmojiCatalog(fetcher, { deferIcons: true }));
+    await vi.waitFor(() => expect(result.current.status).toBe('ready'));
+
+    if (result.current.status === 'ready') {
+      const loadPromise = result.current.loadIcons();
+      act(() => {
+        result.current.retry();
+      });
+      expect(result.current.status).toBe('loading');
+      resolveIcons(responseWith(iconCatalogFixture));
+      const icons = await loadPromise;
+      expect(icons).toEqual(iconCatalogFixture);
+    }
   });
 });
 

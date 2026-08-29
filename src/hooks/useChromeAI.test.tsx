@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import * as aiModule from '../lib/ai';
 import { useChromeAI } from './useChromeAI';
 
 describe('useChromeAI hook', () => {
@@ -142,14 +143,11 @@ describe('useChromeAI hook', () => {
   });
 
   it('handles non-Error exception during polish', async () => {
-    const destroy = vi.fn();
-    const prompt = vi.fn().mockRejectedValue('String error occurred');
-    const create = vi.fn().mockResolvedValue({ prompt, destroy });
     const mockFactory = {
       availability: vi.fn().mockResolvedValue('readily'),
-      create,
     };
     const onError = vi.fn();
+    const polishSpy = vi.spyOn(aiModule, 'polishMessageWithAI').mockRejectedValueOnce('raw string rejection');
 
     const { result } = renderHook(() =>
       useChromeAI({
@@ -170,6 +168,7 @@ describe('useChromeAI hook', () => {
     expect(polishedResult).toBeNull();
     expect(result.current.error).toBe('Failed to polish message with AI');
     expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    polishSpy.mockRestore();
   });
 
   it('cancels ongoing polish request on unmount', async () => {

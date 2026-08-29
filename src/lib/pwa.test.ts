@@ -87,4 +87,18 @@ describe('registerServiceWorker', () => {
   it('reports unsupported when the browser lacks navigator.serviceWorker', async () => {
     expect(await registerServiceWorker()).toEqual({ status: 'unsupported' });
   });
+
+  it('handles undefined navigator safely', async () => {
+    const originalNavigator = globalThis.navigator;
+    try {
+      // @ts-expect-error test undefined navigator
+      delete globalThis.navigator;
+      expect(await registerServiceWorker()).toEqual({ status: 'unsupported' });
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: originalNavigator,
+        configurable: true,
+      });
+    }
+  });
 });

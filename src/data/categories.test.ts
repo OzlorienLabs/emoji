@@ -136,4 +136,21 @@ describe('categories', () => {
 
     expect(resolveCategoryId('secret-icon-cat', customCategories)).toBe('test-cat');
   });
+
+  it('resolves category ID by numeric emojiGroupIds when aliases do not match', () => {
+    const customCategories = [
+      {
+        id: 'numeric-cat',
+        label: 'Numeric Category',
+        icon: '★',
+        emojiGroupIds: [42],
+        iconCategoryIds: [],
+        aliases: ['other-alias'],
+        hasEmojis: true,
+        hasIcons: false,
+      },
+    ];
+
+    expect(resolveCategoryId('42', customCategories)).toBe('numeric-cat');
+  });
 });

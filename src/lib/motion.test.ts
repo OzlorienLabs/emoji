@@ -65,6 +65,16 @@ describe('flyToDock', () => {
     // No `Element.animate` in this DOM, so the effect is skipped entirely.
     expect(flyToDock(tile(), dock)).toBe(false);
     expect(document.querySelector('.fly-ghost')).toBeNull();
+
+    const sourceTile = tile();
+    const origDoc = globalThis.document;
+    try {
+      // @ts-expect-error test undefined document
+      delete globalThis.document;
+      expect(flyToDock(sourceTile, dock)).toBe(false);
+    } finally {
+      globalThis.document = origDoc;
+    }
   });
 
   it('animates a ghost toward the dock and removes it when the animation settles', async () => {

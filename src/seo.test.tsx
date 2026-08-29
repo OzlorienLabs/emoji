@@ -214,4 +214,16 @@ describe('dynamic document title generation', () => {
       'Emoji Compass — Search 3,900+ Emojis & 1,700+ Vector Icons by Meaning',
     );
   });
+
+  it('handles unknown category gracefully with content type fallback', () => {
+    expect(computeDocumentTitle('', 'unknown-cat', 'emoji', sampleCategories)).toBe(
+      'Every emoji — Emoji Compass',
+    );
+    expect(computeDocumentTitle('', 'unknown-cat', 'icon', sampleCategories)).toBe(
+      'Every icon — Emoji Compass',
+    );
+    expect(computeDocumentTitle('', 'unknown-cat', 'all', sampleCategories)).toBe(
+      'Everything, ranked by meaning — Emoji Compass',
+    );
+  });
 });

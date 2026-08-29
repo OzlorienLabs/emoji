@@ -556,7 +556,7 @@ describe('Emoji Compass', () => {
     );
 
     // Initial message with blue heart
-    await user.type(screen.getByRole('searchbox'), 'blue heart');
+    await user.type(screen.getByRole('searchbox'), 'heart');
     await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
     expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
 
@@ -565,8 +565,9 @@ describe('Emoji Compass', () => {
     await user.click(polishBtn);
     expect(screen.getByText('Polishing with on-device AI…')).toBeInTheDocument();
 
-    // Try to add another emoji while polish is active
+    // Try to add another emoji and icon while polish is active
     await user.click(screen.getByRole('button', { name: 'Add blue heart' }));
+    await user.click(screen.getByRole('button', { name: 'Add heart' }));
 
     // Message must still only be 💙 while polishing
     expect(screen.getByLabelText('Emoji composer')).toHaveTextContent('💙');
@@ -1060,5 +1061,114 @@ describe('Emoji Compass', () => {
     await user.click(screen.getByRole('tab', { name: /Icons/ }));
     expect(loadIcons).toHaveBeenCalled();
   });
+
+  it('restores previous theme attribute on unmount if it was originally set', () => {
+    document.documentElement.dataset.theme = 'custom-theme';
+    const { unmount } = render(
+      <App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />,
+    );
+    unmount();
+    expect(document.documentElement.dataset.theme).toBe('custom-theme');
+    delete document.documentElement.dataset.theme;
+  });
+
+  it('shows error feedback when clipboard copy fails', async () => {
+    const user = userEvent.setup();
+    const failingCopy = vi.fn().mockResolvedValue({
+      status: 'error' as const,
+      message: 'Clipboard access denied',
+    });
+
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        copy={failingCopy}
+      />,
+    );
+    await user.type(screen.getByRole('searchbox'), 'blue heart');
+    await user.click(await screen.findByRole('button', { name: 'Add blue heart' }));
+    await user.click(screen.getByRole('button', { name: 'Copy composition' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Clipboard access denied');
+  });
+
+  it('clears active category when switching to content type that has no items for that category', async () => {
+    const user = userEvent.setup();
+    render(<App initialCatalog={catalogFixture} initialIconCatalog={iconCatalogFixture} />);
+
+    // Click Smileys & emotion (emoji only, has no icons in fixture)
+    await user.click(screen.getByRole('button', { name: /Smileys & emotion/i }));
+    expect(screen.getByRole('button', { name: /Smileys & emotion/i })).toHaveAttribute('aria-pressed', 'true');
+
+    // Switch to Icons tab
+    await user.click(screen.getByRole('tab', { name: 'Icons' }));
+
+    // Category should be reset to null (All icons selected)
+    expect(screen.getByRole('button', { name: 'All icons' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('filters results by search query within recent collection', async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), recentIds: ['1F499'] }}
+      />,
+    );
+
+    // Switch to Recent category
+    await user.click(screen.getByRole('button', { name: 'Recently used' }));
+
+    // Now type a query while in Recent
+    await user.type(screen.getByRole('searchbox'), 'blue');
+    expect(screen.getByRole('button', { name: 'Add blue heart' })).toBeInTheDocument();
+  });
+
+  it('quick-copies icon as SVG by default', async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true }}
+      />,
+    );
+
+    // Switch to Icons
+    await user.click(screen.getByRole('tab', { name: 'Icons' }));
+
+    // Quick-copy an icon
+    const copyBtn = await screen.findByRole('button', { name: 'Copy arrow right' });
+    await user.click(copyBtn);
+
+    expect(screen.getByRole('status', { name: 'Copy status' })).toHaveTextContent('arrow right copied');
+  });
+
+  it('adds icon to message from details dialog while quick copy is enabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        initialCatalog={catalogFixture}
+        initialIconCatalog={iconCatalogFixture}
+        initialPreferences={{ ...createDefaultPreferences(), quickCopy: true }}
+      />,
+    );
+
+    // Switch to Icons
+    await user.click(screen.getByRole('tab', { name: 'Icons' }));
+
+    // Open details for arrow right
+    await user.click(screen.getByRole('button', { name: 'Details for arrow right' }));
+
+    // Add to message
+    await user.click(await screen.findByRole('button', { name: 'Add to message' }));
+
+    expect(screen.getByRole('status', { name: 'Copy status' })).toHaveTextContent(
+      'arrow right copied',
+    );
+  });
 });
+
 

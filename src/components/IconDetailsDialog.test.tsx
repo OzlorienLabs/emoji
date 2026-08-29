@@ -244,7 +244,26 @@ describe('IconDetailsDialog', () => {
     expect(screen.getByRole('button', { name: '1.5px' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '64px' })).toHaveAttribute('aria-pressed', 'true');
 
-    await user.click(screen.getByRole('button', { name: 'Copy SVG' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Copy SVG' }));
     expect(onCopySvg).toHaveBeenCalledWith(expect.stringContaining('stroke-width="1.5"'));
+  });
+
+  it('formats metadata correctly with exactly 1 tag', () => {
+    const singleTagIcon = { ...icon, tags: ['navigation'] };
+    render(
+      <IconDetailsDialog
+        icon={singleTagIcon}
+        favorite={false}
+        relatedIcons={[]}
+        onCopySvg={vi.fn()}
+        onCopyJsx={vi.fn()}
+        onCopyName={vi.fn()}
+        onCopyHtml={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        onViewRelated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/1 tag$/)).toBeInTheDocument();
   });
 });

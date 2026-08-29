@@ -70,6 +70,17 @@ describe('analytics module', () => {
       expect(document.querySelector('script[src*="googletagmanager.com"]')).toBeNull();
     });
 
+    it('returns false when window or document is undefined', () => {
+      const origWindow = globalThis.window;
+      try {
+        // @ts-expect-error test undefined window
+        delete globalThis.window;
+        expect(initAnalytics('G-TEST123')).toBe(false);
+      } finally {
+        globalThis.window = origWindow;
+      }
+    });
+
     it('injects script and initializes dataLayer & gtag when measurement ID is provided', () => {
       const initialized = initAnalytics('G-TEST12345');
       expect(initialized).toBe(true);
@@ -170,6 +181,27 @@ describe('analytics module', () => {
         page_title: document.title,
         page_location: window.location.href,
       });
+
+      // Default arguments when window.location and document are undefined
+      const origLocation = window.location;
+      const origDoc = globalThis.document;
+      try {
+        delete (window as { location?: unknown }).location;
+        delete (globalThis as { document?: unknown }).document;
+        trackPageView();
+        expect(gtagSpy).toHaveBeenLastCalledWith('event', 'page_view', {
+          page_path: undefined,
+          page_title: undefined,
+          page_location: undefined,
+        });
+      } finally {
+        Object.defineProperty(window, 'location', {
+          value: origLocation,
+          configurable: true,
+          writable: true,
+        });
+        globalThis.document = origDoc;
+      }
     });
 
     it('does nothing in trackPageView if no measurement ID is configured', () => {

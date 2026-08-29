@@ -125,4 +125,24 @@ describe('PreferencePanel', () => {
     await userEvent.click(document.body);
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
+
+  it('does not dismiss when clicking an element inside [aria-label="Open preferences"]', async () => {
+    const onDismiss = vi.fn();
+    const gearBtn = document.createElement('button');
+    gearBtn.setAttribute('aria-label', 'Open preferences');
+    document.body.appendChild(gearBtn);
+
+    render(
+      <PreferencePanel
+        preferences={createDefaultPreferences()}
+        onChange={vi.fn()}
+        onDismiss={onDismiss}
+      />,
+    );
+
+    await userEvent.click(gearBtn);
+    expect(onDismiss).not.toHaveBeenCalled();
+    gearBtn.remove();
+  });
 });
+

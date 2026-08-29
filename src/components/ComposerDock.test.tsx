@@ -66,8 +66,9 @@ describe('ComposerDock', () => {
     fireEvent.input(box);
     expect(onChange).toHaveBeenCalledWith(':arrow-right::code:😀');
 
-    // Test input with nested formatting elements
+    // Test input with nested formatting elements and non-element nodes (comment)
     box.innerHTML = '<span>plain <strong>bold</strong></span>';
+    box.appendChild(document.createComment('test comment node'));
     fireEvent.input(box);
     expect(onChange).toHaveBeenCalledWith('plain bold');
     expect(box).not.toHaveAttribute('data-empty');
